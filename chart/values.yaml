@@ -1,0 +1,164 @@
+# Default values for nsi-orchestrator-ui.
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/workfloworchestrator/nsi-orchestrator-ui
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# ConfigMap with nsi-orchestrator-ui environment variables mounted into the pod. Uncomment and set
+# per environment; NEXTAUTH_SECRET and the OAuth2 client secret come from secretProviderClass, not
+# here. See .env.example for the full list.
+#env:
+#  # Point the browser at the orchestrator API on the shared host (same origin as the UI).
+#  ORCHESTRATOR_API_HOST: "https://orchestrator.example.net"
+#  ORCHESTRATOR_API_PATH: "/api"
+#  ORCHESTRATOR_GRAPHQL_HOST: "https://orchestrator.example.net"
+#  ORCHESTRATOR_GRAPHQL_PATH: "/api/graphql"
+#  ORCHESTRATOR_WEBSOCKET_URL: "wss://orchestrator.example.net/api/ws/events"
+#  USE_WEB_SOCKETS: "true"
+#  ENVIRONMENT_NAME: "Development"
+#  # Auth against the OIDC provider (SRAM); request the groups scope.
+#  OAUTH2_ACTIVE: "true"
+#  NEXTAUTH_PROVIDER_ID: "sram"
+#  NEXTAUTH_PROVIDER_NAME: "SRAM"
+#  NEXTAUTH_AUTHORIZATION_SCOPE_OVERRIDE: "openid profile email eduperson_entitlement"
+#  OAUTH2_CLIENT_ID: "nsi-orchestrator-ui"
+#  OIDC_CONF_FULL_WELL_KNOWN_URL: "https://proxy.sram.surf.nl/.well-known/openid-configuration"
+#  NEXTAUTH_URL: "https://orchestrator.example.net/api/auth"
+#  # UX-only sign-in guard (backend enforces); set to the operators group URN.
+#  NEXTAUTH_REQUIRED_GROUP: ""
+#  # Override the sidebar logo with a deployment-specific image; empty shows the WFO wordmark.
+#  APP_LOGO_URL: ""
+
+serviceAccount:
+  create: false
+  automount: true
+  annotations: {}
+  # Name to use; generated from the fullname template when empty and create is true.
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # cert-manager.io/issuer: harica
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+# Expose the service via gateway-api HTTPRoute instead of an Ingress. Requires Gateway API
+# resources and a controller in the cluster (see https://gateway-api.sigs.k8s.io/guides/).
+httpRoute:
+  enabled: false
+  annotations: {}
+  # Gateways this route attaches to.
+  parentRefs:
+  - name: gateway
+    sectionName: http
+    # namespace: default
+  hostnames:
+  - chart-example.local
+  # The UI owns / on the shared listener; the backend chart attaches /api on the same host.
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+
+# Leave empty to let the cluster decide; set requests/limits per environment.
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+# The Next.js server responds on / (the app shell) once it is up.
+livenessProbe:
+  httpGet:
+    path: /
+    port: 3000
+  initialDelaySeconds: 15
+readinessProbe:
+  httpGet:
+    path: /
+    port: 3000
+  initialDelaySeconds: 5
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+# Pulls the NextAuth secret (and the OAuth2 client secret, if the SRAM client is confidential) from
+# a cloud key vault via the secrets-store CSI driver, exposing them as the {{ .Release.Name }}-secret
+# used by envFrom. The deployment (ApplicationSet) sets the real provider/objects; disabled by
+# default for local rendering.
+secretProviderClass:
+  enabled: false
+  provider: YourKvProvider
+  name: "example-kv"
+  keyVaultName: "example-kv"
+  tenantId: "00000000-0000-0000-0000-000000000000"
+  nodePublishSecretRefNname: "kv-sp-secret"
+  env:
+    #- name: "HOST"
+    #  value: "db.example.domain"
+  objects:
+    - key: "NEXTAUTH_SECRET"
+      objectName: "nsi-orchestrator-ui-nextauth-secret"
+    #- key: "OAUTH2_CLIENT_SECRET"
+    #  objectName: "nsi-orchestrator-ui-oauth2-client-secret"
+
+# Additional volumes / volumeMounts on the Deployment.
+volumes: []
+# - name: foo
+#   secret:
+#     secretName: mysecret
+#     optional: false
+volumeMounts: []
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
