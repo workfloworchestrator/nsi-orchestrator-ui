@@ -36,6 +36,17 @@ fullnameOverride: ""
 #  NEXTAUTH_REQUIRED_GROUP: ""
 #  # Override the sidebar logo with a deployment-specific image; empty shows the WFO wordmark.
 #  APP_LOGO_URL: ""
+#  # Optional UI toggles. All are off/empty by default; set any key (even to "") to silence the
+#  # "Missing required environment variables" warning the app logs for unset ones.
+#  USE_THEME_TOGGLE: "true"
+#  SHOW_WORKFLOW_INFORMATION_LINK: "false"
+#  WORKFLOW_INFORMATION_LINK_URL: ""
+#  ENABLE_SUPPORT_MENU_ITEM: "false"
+#  SUPPORT_MENU_ITEM_URL: ""
+#  ENABLE_AO_STACK_STATUS: "false"
+#  AO_STACK_STATUS_URL: ""
+#  # Pipe-separated workflow categories for the start page, e.g. "Create|Modify|Terminate".
+#  START_WORKFLOW_FILTERS: ""
 
 serviceAccount:
   create: false
