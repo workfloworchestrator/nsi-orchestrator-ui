@@ -74,7 +74,7 @@ components into a Next.js app and provides the integration glue
 
 ## Prerequisites
 
-- **Node.js 18+** (the Docker image uses `node:18-alpine`)
+- **Node.js 20+** (the Docker image uses `node:20-alpine`)
 - **npm** (the lockfile is `package-lock.json`)
 - A running nsi-orchestrator backend to talk to.
 
