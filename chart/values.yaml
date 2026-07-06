@@ -24,11 +24,12 @@ fullnameOverride: ""
 #  ORCHESTRATOR_WEBSOCKET_URL: "wss://orchestrator.example.net/api/ws/events"
 #  USE_WEB_SOCKETS: "true"
 #  ENVIRONMENT_NAME: "Development"
-#  # Auth against the OIDC provider (SRAM); request the groups scope.
+#  # Auth against the OIDC provider (SRAM); request the groups scope, plus offline_access for a
+#  # refresh token (without it the session dies at access-token expiry).
 #  OAUTH2_ACTIVE: "true"
 #  NEXTAUTH_PROVIDER_ID: "sram"
 #  NEXTAUTH_PROVIDER_NAME: "SRAM"
-#  NEXTAUTH_AUTHORIZATION_SCOPE_OVERRIDE: "openid profile email eduperson_entitlement"
+#  NEXTAUTH_AUTHORIZATION_SCOPE_OVERRIDE: "openid profile email eduperson_entitlement offline_access"
 #  OAUTH2_CLIENT_ID: "nsi-orchestrator-ui"
 #  OIDC_CONF_FULL_WELL_KNOWN_URL: "https://proxy.sram.surf.nl/.well-known/openid-configuration"
 #  NEXTAUTH_URL: "https://orchestrator.example.net/api/auth"

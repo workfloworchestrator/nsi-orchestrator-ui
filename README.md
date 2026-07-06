@@ -131,7 +131,7 @@ state checks are enabled, and access tokens are refreshed automatically.
 | `OIDC_CONF_FULL_WELL_KNOWN_URL`         | Full URL to the OIDC `.well-known/openid-configuration` document.        |
 | `NEXTAUTH_PROVIDER_ID`                  | Internal NextAuth provider id (e.g. `keycloak`).                         |
 | `NEXTAUTH_PROVIDER_NAME`                | Human-readable name shown on the sign-in screen.                         |
-| `NEXTAUTH_AUTHORIZATION_SCOPE_OVERRIDE` | Optional. Override the requested scopes (default: `openid profile`).     |
+| `NEXTAUTH_AUTHORIZATION_SCOPE_OVERRIDE` | Optional. Override the requested scopes (default: `openid profile`). Include `offline_access` for a refresh token. |
 | `NEXTAUTH_SECRET`                       | Standard NextAuth secret for signing session tokens (required in prod).  |
 | `NEXTAUTH_URL`                          | Public base URL of the deployed UI (required by NextAuth in production). |
 
