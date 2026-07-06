@@ -6,7 +6,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
 COPY . .
 
-RUN npm install -g npm@11.16.0 && npm ci && npm update @orchestrator-ui/orchestrator-ui-components && npm update @orchestrator-ui/eslint-config-custom && npm update @orchestrator-ui/jest-config && npm update @orchestrator-ui/tsconfig
+RUN npm install -g npm@11.16.0 && npm ci
 RUN npm run build
 
 
