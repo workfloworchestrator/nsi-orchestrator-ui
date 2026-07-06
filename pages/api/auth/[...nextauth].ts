@@ -122,6 +122,8 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
     }
 }
 
+const authorizationScope = NEXTAUTH_AUTHORIZATION_SCOPE_OVERRIDE || 'openid profile';
+
 const wfoProvider: OAuthConfig<WfoUserProfile> = {
     id: NEXTAUTH_PROVIDER_ID,
     name: NEXTAUTH_PROVIDER_NAME,
@@ -131,7 +133,12 @@ const wfoProvider: OAuthConfig<WfoUserProfile> = {
     wellKnown: OIDC_CONF_FULL_WELL_KNOWN_URL,
     authorization: {
         params: {
-            scope: NEXTAUTH_AUTHORIZATION_SCOPE_OVERRIDE || 'openid profile',
+            scope: authorizationScope,
+            // A refresh token needs explicit consent; providers reject an offline_access request
+            // unless prompt=consent is sent.
+            ...(authorizationScope.split(' ').includes('offline_access')
+                ? { prompt: 'consent' }
+                : {}),
         },
     },
     idToken: true,
