@@ -41,11 +41,12 @@ import '../font/inter.css';
 type AppOwnProps = {
     orchestratorConfig: OrchestratorConfig;
     appLogoUrl?: string | null;
+    appName?: string | null;
 };
 
 function CustomApp({ Component, pageProps }: AppProps & AppOwnProps) {
     const router = useRouter();
-    const { orchestratorConfig, appLogoUrl } = pageProps;
+    const { orchestratorConfig, appLogoUrl, appName } = pageProps;
     const [orchestratorLoadedConfig, setOrchestratorLoadedConfig] =
         useState<OrchestratorConfig | null>(null);
     // Resolved server-side (per deployment) and kept once set, mirroring the config above.
@@ -118,13 +119,19 @@ function CustomApp({ Component, pageProps }: AppProps & AppOwnProps) {
                                                 rel="icon"
                                                 href="/favicon.png"
                                             />
-                                            <title>NSI Orchestrator</title>
+                                            <title>
+                                                {appName || 'NSI Orchestrator'}
+                                            </title>
                                         </Head>
                                         <main className="app">
                                             <ConfirmationDialogContextWrapper>
                                                 <WfoPageTemplate
                                                     getAppLogo={() =>
-                                                        getAppLogo(logoUrl)
+                                                        getAppLogo(
+                                                            logoUrl,
+                                                            appName ||
+                                                                undefined,
+                                                        )
                                                     }
                                                     overrideMenuItems={
                                                         addMenuItems
@@ -161,9 +168,9 @@ function CustomApp({ Component, pageProps }: AppProps & AppOwnProps) {
 CustomApp.getInitialProps = async (context: AppContext) => {
     const isServerside = typeof window === 'undefined';
     const appProps = await App.getInitialProps(context);
-    const { APP_LOGO_URL } = isServerside
-        ? getEnvironmentVariables(['APP_LOGO_URL'])
-        : { APP_LOGO_URL: null };
+    const { APP_LOGO_URL, APP_NAME } = isServerside
+        ? getEnvironmentVariables(['APP_LOGO_URL', 'APP_NAME'])
+        : { APP_LOGO_URL: null, APP_NAME: null };
 
     return {
         ...appProps,
@@ -173,6 +180,7 @@ CustomApp.getInitialProps = async (context: AppContext) => {
                 ? getInitialOrchestratorConfig()
                 : null,
             appLogoUrl: APP_LOGO_URL ?? null,
+            appName: APP_NAME ?? null,
         },
     };
 };

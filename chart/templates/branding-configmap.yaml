@@ -1,0 +1,14 @@
+{{- if .Values.branding.logo }}
+{{- if contains "/" .Values.branding.fileName }}
+{{- fail "branding.fileName must not contain '/' (it is used as a ConfigMap data key)" }}
+{{- end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-branding
+  labels:
+    {{- include "nsi-orchestrator-ui.labels" . | nindent 4 }}
+data:
+  {{ .Values.branding.fileName }}: |-
+{{ .Values.branding.logo | indent 4 }}
+{{- end }}

@@ -1,4 +1,4 @@
-{{- if .Values.env }}
+{{- if or .Values.env .Values.branding.logo }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -10,8 +10,11 @@ metadata:
     helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
   name: {{ .Release.Name }}-environment
   namespace: {{ .Release.Namespace }}
-{{- with .Values.env }}
 data:
-    {{- toYaml . | nindent 8 }}
-{{- end }}
+  {{- if and .Values.branding.logo (not (hasKey (default dict .Values.env) "APP_LOGO_URL")) }}
+  APP_LOGO_URL: {{ printf "/branding/%s" .Values.branding.fileName | quote }}
+  {{- end }}
+  {{- with .Values.env }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
 {{- end }}

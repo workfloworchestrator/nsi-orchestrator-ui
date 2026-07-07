@@ -123,17 +123,17 @@ Authentication is handled by [NextAuth](https://next-auth.js.org/) with
 a generic OIDC provider configured from the `wellKnown` URL. PKCE +
 state checks are enabled, and access tokens are refreshed automatically.
 
-| Variable                                | Description                                                              |
-| --------------------------------------- | ------------------------------------------------------------------------ |
-| `OAUTH2_ACTIVE`                         | Set to `false` to disable login entirely (handy for local dev).          |
-| `OAUTH2_CLIENT_ID`                      | OAuth2 client ID.                                                        |
-| `OAUTH2_CLIENT_SECRET`                  | Optional. Omit for public/PKCE-only clients.                             |
-| `OIDC_CONF_FULL_WELL_KNOWN_URL`         | Full URL to the OIDC `.well-known/openid-configuration` document.        |
-| `NEXTAUTH_PROVIDER_ID`                  | Internal NextAuth provider id (e.g. `keycloak`).                         |
-| `NEXTAUTH_PROVIDER_NAME`                | Human-readable name shown on the sign-in screen.                         |
+| Variable                                | Description                                                                                                        |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `OAUTH2_ACTIVE`                         | Set to `false` to disable login entirely (handy for local dev).                                                    |
+| `OAUTH2_CLIENT_ID`                      | OAuth2 client ID.                                                                                                  |
+| `OAUTH2_CLIENT_SECRET`                  | Optional. Omit for public/PKCE-only clients.                                                                       |
+| `OIDC_CONF_FULL_WELL_KNOWN_URL`         | Full URL to the OIDC `.well-known/openid-configuration` document.                                                  |
+| `NEXTAUTH_PROVIDER_ID`                  | Internal NextAuth provider id (e.g. `keycloak`).                                                                   |
+| `NEXTAUTH_PROVIDER_NAME`                | Human-readable name shown on the sign-in screen.                                                                   |
 | `NEXTAUTH_AUTHORIZATION_SCOPE_OVERRIDE` | Optional. Override the requested scopes (default: `openid profile`). Include `offline_access` for a refresh token. |
-| `NEXTAUTH_SECRET`                       | Standard NextAuth secret for signing session tokens (required in prod).  |
-| `NEXTAUTH_URL`                          | Public base URL of the deployed UI (required by NextAuth in production). |
+| `NEXTAUTH_SECRET`                       | Standard NextAuth secret for signing session tokens (required in prod).                                            |
+| `NEXTAUTH_URL`                          | Public base URL of the deployed UI (required by NextAuth in production).                                           |
 
 > **Heads up:** several auth env vars were renamed in commit `edec88c`.
 > See [`breaking-changes.md`](./breaking-changes.md) if you're upgrading
@@ -144,7 +144,8 @@ state checks are enabled, and access tokens are refreshed automatically.
 | Variable                         | Description                                                                                                               |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------ | ----------- |
 | `ENVIRONMENT_NAME`               | Label shown in the top bar (e.g. `DEVELOPMENT`, `STAGING`, `PRODUCTION`).                                                 |
-| `APP_LOGO_URL`                   | URL of a logo image to render in the side nav instead of the default wordmark.                                            |
+| `APP_LOGO_URL`                   | URL of a logo image shown beside the built-in Workflow Orchestrator icon. See [Branding](#branding-logo).                 |
+| `APP_NAME`                       | Header wordmark text and browser tab title (e.g. `ANA Orchestrator`); defaults to the Workflow Orchestrator wordmark.     |
 | `USE_THEME_TOGGLE`               | `true` to show the light/dark theme switcher.                                                                             |
 | `SHOW_WORKFLOW_INFORMATION_LINK` | `true` to show a "more info" link on workflow pages.                                                                      |
 | `WORKFLOW_INFORMATION_LINK_URL`  | Target URL of that link.                                                                                                  |
@@ -214,11 +215,33 @@ Add, remove, or reorder entries here to shape the navigation.
 
 ### Branding (logo)
 
-`components/AppLogo/AppLogo.tsx` exports `getAppLogo()`. By default it
-renders the "Workflow Orchestrator" wordmark; setting `APP_LOGO_URL`
-swaps in a logo image without touching code. To change the fallback
-wordmark or styling, edit `AppLogo.tsx` / `styles.ts`. Static assets
-such as `favicon.png` live in `public/`.
+The header keeps the built-in Workflow Orchestrator icon and renders a
+per-deployment logo and/or wordmark **beside** it, driven by two env
+vars (both optional):
+
+| `APP_LOGO_URL` | `APP_NAME` | Header shows                                     |
+| -------------- | ---------- | ------------------------------------------------ |
+| —              | —          | `[icon]` + "Workflow" / "Orchestrator" (default) |
+| —              | set        | `[icon]` + your text                             |
+| set            | —          | `[icon]` + your logo image                       |
+| set            | set        | `[icon]` + your logo image + your text           |
+
+`APP_NAME` also sets the browser tab title. `components/AppLogo/AppLogo.tsx`
+(`getAppLogo()`) and `styles.ts` own this rendering.
+
+**Supplying the logo image.** Two ways:
+
+- **Host it yourself** — set `APP_LOGO_URL` to any reachable URL (or a
+  `data:` URI for a small inline image).
+- **Ship it with the chart** (no external hosting) — paste the file into the
+  Helm value `branding.logo`; the chart mounts it into the served `public/`
+  dir and points `APP_LOGO_URL` at `/branding/<fileName>` automatically. SVG
+  pastes as text; for local installs use
+  `--set-file branding.logo=./logo.svg`, and for ArgoCD inline it as a block
+  scalar in `valuesObject`. Binary formats (PNG) should use the `APP_LOGO_URL`
+  data-URI route instead. See `chart/values.yaml`.
+
+Static assets such as `favicon.png` live in `public/`.
 
 ### Translations
 

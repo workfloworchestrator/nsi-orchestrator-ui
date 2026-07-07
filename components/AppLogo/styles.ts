@@ -1,6 +1,14 @@
 import { css } from '@emotion/css';
 
 export const getAppLogoStyles = () => {
+    // Holds the optional logo image beside the stacked wordmark text.
+    const logoContainerStyle = css({
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    });
+
     const logoStyle = css({
         display: 'flex',
         flexDirection: 'column',
@@ -11,5 +19,5 @@ export const getAppLogoStyles = () => {
         width: 'auto',
     });
 
-    return { logoStyle, logoImageStyle };
+    return { logoContainerStyle, logoStyle, logoImageStyle };
 };

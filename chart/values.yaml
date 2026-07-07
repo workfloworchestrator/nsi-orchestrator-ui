@@ -35,8 +35,11 @@ fullnameOverride: ""
 #  NEXTAUTH_URL: "https://orchestrator.example.net/api/auth"
 #  # UX-only sign-in guard (backend enforces); set to the operators group URN.
 #  NEXTAUTH_REQUIRED_GROUP: ""
-#  # Override the sidebar logo with a deployment-specific image; empty shows the WFO wordmark.
+#  # Branding, shown beside the built-in Workflow Orchestrator icon (never replaces it).
+#  # APP_LOGO_URL: a logo image URL; leave to branding.logo below to serve a chart-supplied file.
+#  # APP_NAME: header wordmark text and browser tab title (e.g. "ANA Orchestrator").
 #  APP_LOGO_URL: ""
+#  APP_NAME: ""
 #  # Optional UI toggles. All are off/empty by default; set any key (even to "") to silence the
 #  # "Missing required environment variables" warning the app logs for unset ones.
 #  USE_THEME_TOGGLE: "true"
@@ -48,6 +51,16 @@ fullnameOverride: ""
 #  AO_STACK_STATUS_URL: ""
 #  # Pipe-separated workflow categories for the start page, e.g. "Create|Modify|Terminate".
 #  START_WORKFLOW_FILTERS: ""
+
+# Chart-supplied logo. Paste the logo file contents into `logo` and the chart serves it from the
+# pod at /branding/<fileName> — no external hosting needed. When set, APP_LOGO_URL defaults to that
+# path (override it in env above to change). SVG (text) pastes as-is; local install can use
+# `--set-file branding.logo=./logo.svg`, ArgoCD can inline it as a block scalar in valuesObject.
+# For PNG/other binary, leave this empty and set env.APP_LOGO_URL to a data: URI instead (keep it
+# small — a ConfigMap is capped at 1 MiB and the data URI also lands in the env ConfigMap).
+branding:
+  logo: "" # raw file contents, e.g. an <svg>...</svg> document
+  fileName: logo.svg # must not contain "/" (used as a ConfigMap data key)
 
 serviceAccount:
   create: false
