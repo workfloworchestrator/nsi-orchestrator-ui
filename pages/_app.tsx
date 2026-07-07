@@ -50,7 +50,10 @@ function CustomApp({ Component, pageProps }: AppProps & AppOwnProps) {
     const [orchestratorLoadedConfig, setOrchestratorLoadedConfig] =
         useState<OrchestratorConfig | null>(null);
     // Resolved server-side (per deployment) and kept once set, mirroring the config above.
+    // getInitialProps re-runs on client-side navigation where env vars are unavailable, so
+    // these would otherwise revert to null when the user clicks a menu item.
     const [logoUrl, setLogoUrl] = useState<string | undefined>(undefined);
+    const [name, setName] = useState<string | undefined>(undefined);
     const [colorMode, setColorMode] = useState<EuiThemeColorMode>(
         ColorModes.LIGHT,
     );
@@ -69,6 +72,12 @@ function CustomApp({ Component, pageProps }: AppProps & AppOwnProps) {
             setLogoUrl(appLogoUrl);
         }
     }, [appLogoUrl]);
+
+    useEffect(() => {
+        if (appName) {
+            setName(appName);
+        }
+    }, [appName]);
 
     const addMenuItems = (
         defaultMenuItems: EuiSideNavItemType<object>[],
@@ -120,7 +129,7 @@ function CustomApp({ Component, pageProps }: AppProps & AppOwnProps) {
                                                 href="/favicon.png"
                                             />
                                             <title>
-                                                {appName || 'NSI Orchestrator'}
+                                                {name || 'NSI Orchestrator'}
                                             </title>
                                         </Head>
                                         <main className="app">
@@ -129,8 +138,7 @@ function CustomApp({ Component, pageProps }: AppProps & AppOwnProps) {
                                                     getAppLogo={() =>
                                                         getAppLogo(
                                                             logoUrl,
-                                                            appName ||
-                                                                undefined,
+                                                            name,
                                                         )
                                                     }
                                                     overrideMenuItems={
