@@ -122,7 +122,8 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
     }
 }
 
-const authorizationScope = NEXTAUTH_AUTHORIZATION_SCOPE_OVERRIDE || 'openid profile';
+const authorizationScope =
+    NEXTAUTH_AUTHORIZATION_SCOPE_OVERRIDE || 'openid profile';
 
 const wfoProvider: OAuthConfig<WfoUserProfile> = {
     id: NEXTAUTH_PROVIDER_ID,
