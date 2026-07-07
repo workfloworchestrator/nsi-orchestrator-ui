@@ -16,7 +16,15 @@ import { getAppLogoStyles } from '@/components/AppLogo/styles';
 //   both             → the custom logo image followed by the custom text
 const DEFAULT_WORDMARK = ['Workflow', 'Orchestrator'];
 
-export function getAppLogo(logoUrl?: string, appName?: string): ReactElement {
+type AppLogoProps = {
+    logoUrl?: string;
+    appName?: string;
+};
+
+// Defined at module scope so its component identity is stable across renders. Defining it inside
+// getAppLogo gave it a fresh type on every navigation, remounting the <img> and flickering the bar.
+const AppLogo = ({ logoUrl, appName }: AppLogoProps): ReactElement => {
+    const { theme } = useOrchestratorTheme();
     const { logoContainerStyle, logoStyle, logoImageStyle } =
         getAppLogoStyles();
 
@@ -28,34 +36,32 @@ export function getAppLogo(logoUrl?: string, appName?: string): ReactElement {
           ? []
           : DEFAULT_WORDMARK;
 
-    const AppLogo = () => {
-        const { theme } = useOrchestratorTheme();
+    return (
+        <div className={logoContainerStyle}>
+            {logoUrl && (
+                <img
+                    className={logoImageStyle}
+                    src={logoUrl}
+                    alt={name || 'logo'}
+                />
+            )}
+            {wordmark.length > 0 && (
+                <div className={logoStyle}>
+                    {wordmark.map((line, index) => (
+                        <EuiText
+                            key={index}
+                            color={theme.colors.textGhost}
+                            size="xs"
+                        >
+                            {line}
+                        </EuiText>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
 
-        return (
-            <div className={logoContainerStyle}>
-                {logoUrl && (
-                    <img
-                        className={logoImageStyle}
-                        src={logoUrl}
-                        alt={name || 'logo'}
-                    />
-                )}
-                {wordmark.length > 0 && (
-                    <div className={logoStyle}>
-                        {wordmark.map((line, index) => (
-                            <EuiText
-                                key={index}
-                                color={theme.colors.textGhost}
-                                size="xs"
-                            >
-                                {line}
-                            </EuiText>
-                        ))}
-                    </div>
-                )}
-            </div>
-        );
-    };
-
-    return <AppLogo />;
+export function getAppLogo(logoUrl?: string, appName?: string): ReactElement {
+    return <AppLogo logoUrl={logoUrl} appName={appName} />;
 }
