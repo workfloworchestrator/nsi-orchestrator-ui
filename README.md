@@ -287,7 +287,7 @@ A Husky `postinstall` hook is registered for pre-commit checks.
 The included `Dockerfile` produces a small two-stage image:
 
 ```sh
-docker build -t nsi-orchestrator-ui .
+docker build --build-arg VERSION="$(git describe --tags --always)" -t nsi-orchestrator-ui .
 docker run --rm -p 3000:3000 --env-file .env nsi-orchestrator-ui
 ```
 
@@ -298,6 +298,15 @@ port `3000`. Published images live at
 `ghcr.io/workfloworchestrator/nsi-orchestrator-ui`.
 
 The Helm chart under `chart/` deploys the image onto Kubernetes.
+
+## Versioning
+
+The release git tag is the only place a version is written by hand. The `package.json` version is
+the placeholder `0.0.0`; `.github/workflows/build-push-container.yml` checks out with
+`fetch-depth: 0`, resolves the version with `git describe --tags --always`, and passes it as
+`--build-arg VERSION=...`. The `Dockerfile` then runs `npm version` before `next build`, so a tag
+builds `0.2.0` and any other commit builds `0.2.0-3-g1a2b3c4`. A build without the argument fails
+rather than producing a mislabelled image.
 
 For production deployments, remember to set:
 

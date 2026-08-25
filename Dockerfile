@@ -3,10 +3,12 @@ FROM node:20-alpine AS builder
 # ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+ARG VERSION
 WORKDIR /app
 COPY . .
 
 RUN npm install -g npm@11.16.0 && npm ci
+RUN npm version "${VERSION:?VERSION build argument is required}" --no-git-tag-version --allow-same-version
 RUN npm run build
 
 

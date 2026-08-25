@@ -1,6 +1,9 @@
 module.exports = {
     reactStrictMode: false,
     output: 'standalone',
+    env: {
+        APP_VERSION: require('./package.json').version,
+    },
     i18n: {
         // These are all the locales you want to support in
         // your application
