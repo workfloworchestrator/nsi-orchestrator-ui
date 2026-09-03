@@ -41,22 +41,22 @@
         "use-query-params": "^2.2.2"
     },
     "devDependencies": {
-        "@orchestrator-ui/eslint-config-custom": "*",
-        "@orchestrator-ui/jest-config": "*",
-        "@orchestrator-ui/tsconfig": "*",
-        "@testing-library/jest-dom": "^7.0.0",
-        "@trivago/prettier-plugin-sort-imports": "^6.0.2",
-        "@types/node": "^25.9.2",
+        "@orchestrator-ui/eslint-config-custom": "2.3.0",
+        "@orchestrator-ui/jest-config": "1.8.0",
+        "@orchestrator-ui/tsconfig": "1.5.0",
+        "@testing-library/jest-dom": "7.0.1",
+        "@trivago/prettier-plugin-sort-imports": "6.0.2",
+        "@types/node": "25.9.5",
         "@types/react": "18.3.31",
         "@types/react-dom": "18.3.7",
-        "@types/react-no-ssr": "^1.1.7",
-        "babel-jest": "^30.5.0",
-        "husky": "^9.0.11",
-        "jest": "^30.5.0",
-        "jest-environment-jsdom": "^30.5.0",
-        "jest-watch-typeahead": "^3.0.1",
-        "prettier": "^3.8.4",
-        "typescript": "^5.9.2",
-        "typescript-eslint": "^8.61.0"
+        "@types/react-no-ssr": "1.1.8",
+        "babel-jest": "30.5.1",
+        "husky": "9.1.7",
+        "jest": "30.5.1",
+        "jest-environment-jsdom": "30.5.1",
+        "jest-watch-typeahead": "3.0.1",
+        "prettier": "3.9.6",
+        "typescript": "5.9.3",
+        "typescript-eslint": "8.69.0"
     }
 }
