@@ -52,7 +52,7 @@ export const getInitialOrchestratorConfig = (): OrchestratorConfig => {
     return {
         orchestratorApiBaseUrl,
         graphqlEndpointCore,
-        environmentName: ENVIRONMENT_NAME ?? Environment.DEVELOPMENT,
+        environmentName: ENVIRONMENT_NAME || Environment.DEVELOPMENT,
         orchestratorWebsocketUrl: ORCHESTRATOR_WEBSOCKET_URL,
         authActive: OAUTH2_ACTIVE?.toLowerCase() != 'false',
         useWebSockets: USE_WEB_SOCKETS?.toLowerCase() === 'true',
