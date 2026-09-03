@@ -23,7 +23,7 @@
     "dependencies": {
         "@elastic/charts": "^72.0.0",
         "@elastic/datemath": "^5.0.3",
-        "@elastic/eui": "^113.0.0",
+        "@elastic/eui": "^119.0.0",
         "@emotion/css": "^11.11.2",
         "@emotion/react": "^11.11.1",
         "@orchestrator-ui/orchestrator-ui-components": "*",
