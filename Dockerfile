@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 # ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -12,7 +12,7 @@ RUN npm version "${VERSION:?VERSION build argument is required}" --no-git-tag-ve
 RUN npm run build
 
 
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 
 # ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
