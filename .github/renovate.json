@@ -24,6 +24,12 @@
         {
             "matchPackageNames": ["node", "npm"],
             "enabled": false
+        },
+        {
+            "description": "The chart image tag is set per release, not pinned by digest",
+            "matchFileNames": ["chart/values.yaml"],
+            "matchDatasources": ["docker"],
+            "pinDigests": false
         }
     ],
     "schedule": ["* 1-5 * * 1-3"],
