@@ -1,7 +1,7 @@
 version: '3'
 services:
     start-dev:
-        image: quay.io/keycloak/keycloak:22.0.5
+        image: quay.io/keycloak/keycloak:22.0.5@sha256:bfa8852e52c279f0857fe8da239c0ad6bbd2cc07793a28a6770f7e24c1e25444
         command: start-dev
         ports:
             - '${KEYCLOAK_PORT}:8080'
