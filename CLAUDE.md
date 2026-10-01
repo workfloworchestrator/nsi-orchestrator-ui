@@ -30,6 +30,13 @@ values, not hard-coded here.
 There is **no** agent/CopilotKit page and no `example-form` here (they exist in
 the upstream fork but were removed). Only a `Search` entry is added to the nav.
 
+## Dependency cooldown
+
+`min-release-age=8` in `.npmrc` and `minimumReleaseAge` in
+`.github/renovate.json` must stay equal. npm enforces the cooldown on indirect
+dependencies, which Renovate cannot. An urgent fix younger than that needs
+`npm install <pkg>@<version> --min-release-age=0`.
+
 ## Before committing
 
 CI runs `npm run prettier` = `prettier -c "{**/*,*}.{ts,tsx,json,js,md}"` and
