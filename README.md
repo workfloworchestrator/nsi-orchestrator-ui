@@ -333,20 +333,17 @@ Then create a realm + client in the Keycloak admin UI and point the
 
 ## Updating the component library
 
-`@orchestrator-ui/orchestrator-ui-components` is declared with version
-`*` so the Turborepo monorepo build always resolves the freshest version.
-When using this repo **standalone**, you have to refresh the lockfile
-manually:
+All `@orchestrator-ui/*` packages are pinned to an exact version, so
+library upgrades (including majors) arrive as reviewable Renovate PRs.
+To upgrade by hand:
 
 ```sh
-npm update @orchestrator-ui/orchestrator-ui-components
-npm update @orchestrator-ui/eslint-config-custom
-npm update @orchestrator-ui/jest-config
-npm update @orchestrator-ui/tsconfig
+npm install --save-exact @orchestrator-ui/orchestrator-ui-components@<version>
 ```
 
-See [`update-instructions.md`](./update-instructions.md) for the full
-note.
+Check the library's release notes for breaking changes and backend
+requirements (e.g. 9.0.1 needs orchestrator-core >= 5.5.0 for workflow
+guides). See [`update-instructions.md`](./update-instructions.md).
 
 ## Breaking changes
 

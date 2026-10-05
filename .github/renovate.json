@@ -1,6 +1,7 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "extends": ["config:best-practices"],
+    "rangeStrategy": "pin",
     "minimumReleaseAge": "8 days",
     "internalChecksFilter": "strict",
     "rebaseWhen": "behind-base-branch",
