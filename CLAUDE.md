@@ -37,6 +37,10 @@ the upstream fork but were removed). Only a `Search` entry is added to the nav.
 dependencies, which Renovate cannot. An urgent fix younger than that needs
 `npm install <pkg>@<version> --min-release-age=0`.
 
+Renovate uses `rangeStrategy: pin`. Keep `orchestrator-ui-components` on an
+exact version (never `*`), so library majors arrive as a separate PR instead
+of being automerged by lock file maintenance.
+
 ## Before committing
 
 CI runs `npm run prettier` = `prettier -c "{**/*,*}.{ts,tsx,json,js,md}"` and
