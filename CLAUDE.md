@@ -35,7 +35,9 @@ the upstream fork but were removed). Only a `Search` entry is added to the nav.
 `min-release-age=8` in `.npmrc` and `minimumReleaseAge` in
 `.github/renovate.json` must stay equal. npm enforces the cooldown on indirect
 dependencies, which Renovate cannot. An urgent fix younger than that needs
-`npm install <pkg>@<version> --min-release-age=0`.
+`npm install <pkg>@<version> --min-release-age=0`. Lock file maintenance
+sets `minimumReleaseAge` to `null`: it has no release timestamp, so Renovate
+would keep `renovate/stability-days` pending forever and never automerge it.
 
 Renovate uses `rangeStrategy: pin`. Keep `orchestrator-ui-components` on an
 exact version (never `*`), so library majors arrive as a separate PR instead
