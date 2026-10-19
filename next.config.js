@@ -13,5 +13,6 @@ module.exports = {
     transpilePackages: [
         '@copilotkit/react-core',
         '@orchestrator-ui/orchestrator-ui-components',
+        'pydantic-forms',
     ],
 };

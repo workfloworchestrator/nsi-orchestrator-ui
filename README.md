@@ -57,7 +57,7 @@ deployment onto Kubernetes.
 ```mermaid
 flowchart LR
     Browser["Browser<br/>(Elastic EUI)"]
-    UI["nsi-orchestrator-ui<br/>Next.js 15 · pages router"]
+    UI["nsi-orchestrator-ui<br/>Next.js 16 · pages router"]
     Backend["nsi-orchestrator<br/>(REST + GraphQL + WebSocket)"]
     OIDC["OIDC Provider<br/>(e.g. Keycloak)"]
 

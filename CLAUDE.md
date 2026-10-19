@@ -43,6 +43,22 @@ Renovate uses `rangeStrategy: pin`. Keep `orchestrator-ui-components` on an
 exact version (never `*`), so library majors arrive as a separate PR instead
 of being automerged by lock file maintenance.
 
+## Library peers move together
+
+The library pins the majors of `@elastic/eui` and `next` as peers and depends
+on `next-intl` directly. A library major usually needs all of them bumped in
+one change; Renovate's single-package PRs each fail `npm ci` with ERESOLVE.
+If npm still refuses after bumping them together, delete `package-lock.json`
+and reinstall — the old lock pins the solver. `tests/peer-dependencies.test.ts`
+catches a second copy of a context provider such as `next-intl`.
+
+`overrides` forces `next-query-params` onto the app's `next`; its peer range
+stops at 15. Drop it once a release accepts 16.
+
+The library, `uuid` (via EUI) and the next-intl stack ship ESM only.
+`jest.config.cjs` replaces next/jest's `transformIgnorePatterns` so Jest
+transforms them; add any new ESM-only dependency to `esmDependencies` there.
+
 ## Before committing
 
 CI runs `npm run prettier` = `prettier -c "{**/*,*}.{ts,tsx,json,js,md}"` and

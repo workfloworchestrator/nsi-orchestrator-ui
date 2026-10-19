@@ -6,12 +6,32 @@ const createJestConfig = nextJest({
     dir: './',
 });
 
-// The entry for "uuid" in the moduleNameMapper can be removed when EUI updates the dependency version to 9.0.0 or higher.
-// https://github.com/uuidjs/uuid/blob/main/CHANGELOG.md#900-2022-09-05
 const customJestConfig = {
     ...base,
     displayName: 'Wfo-UI Tests',
-    moduleNameMapper: { "^uuid$": "uuid" },
 };
 
-module.exports = createJestConfig(customJestConfig);
+// Packages that ship ESM only and must be transformed: the library, EUI's uuid
+// and the next-intl stack (mirrors esmDependencies in @orchestrator-ui/jest-config).
+const esmDependencies = [
+    '@orchestrator-ui/orchestrator-ui-components',
+    'uuid',
+    'next-intl',
+    'use-intl',
+    'intl-messageformat',
+    '@formatjs/.*',
+    '@apidevtools/json-schema-ref-parser',
+];
+
+// next/jest only appends to transformIgnorePatterns, and a file matching any
+// pattern is skipped, so the list is replaced afterwards with a single one.
+module.exports = async () => {
+    const config = await createJestConfig(customJestConfig)();
+
+    config.transformIgnorePatterns = [
+        `/node_modules/(?!(${esmDependencies.join('|')})/)`,
+        '^.+\\.module\\.(css|sass|scss)$',
+    ];
+
+    return config;
+};
