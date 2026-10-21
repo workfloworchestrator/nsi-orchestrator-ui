@@ -28,7 +28,14 @@
             "automerge": true
         },
         {
-            "matchPackageNames": ["node", "npm"],
+            "description": "One Node version for the image and CI; a new major is a deliberate upgrade",
+            "matchPackageNames": ["node"],
+            "groupName": "Node.js",
+            "groupSlug": "node"
+        },
+        {
+            "matchPackageNames": ["node"],
+            "matchUpdateTypes": ["major"],
             "enabled": false
         },
         {

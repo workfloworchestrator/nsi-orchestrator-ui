@@ -43,6 +43,12 @@ Renovate uses `rangeStrategy: pin`. Keep `orchestrator-ui-components` on an
 exact version (never `*`), so library majors arrive as a separate PR instead
 of being automerged by lock file maintenance.
 
+Node is pinned to one exact version in both `Dockerfile` stages (with digest)
+and every `node-version` in CI; Renovate updates them together as the
+"Node.js" group. It skips Node majors: moving to the next LTS is a manual
+change to all of them at once. The image and CI install the npm named in
+`packageManager` in `package.json`; that field is the only npm pin.
+
 ## Library peers move together
 
 The library pins the majors of `@elastic/eui` and `next` as peers and depends
