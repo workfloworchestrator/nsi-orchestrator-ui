@@ -22,10 +22,10 @@
         "@elastic/eui": "122.1.0",
         "@emotion/css": "11.13.5",
         "@emotion/react": "11.14.0",
-        "@orchestrator-ui/orchestrator-ui-components": "10.0.2",
+        "@orchestrator-ui/orchestrator-ui-components": "10.2.1",
         "@reduxjs/toolkit": "2.13.0",
         "moment": "2.31.0",
-        "next": "16.4.0",
+        "next": "16.4.2",
         "next-intl": "4.14.9",
         "next-query-params": "5.1.0",
         "process": "0.11.10",
@@ -45,7 +45,7 @@
         "@types/react-no-ssr": "1.1.8",
         "@types/semver": "7.8.0",
         "babel-jest": "30.5.2",
-        "eslint": "10.12.0",
+        "eslint": "10.13.0",
         "husky": "9.1.7",
         "jest": "30.5.2",
         "jest-environment-jsdom": "30.5.2",
@@ -53,7 +53,7 @@
         "prettier": "3.9.10",
         "semver": "7.8.5",
         "typescript": "5.9.3",
-        "typescript-eslint": "8.71.1"
+        "typescript-eslint": "8.71.2"
     },
     "overrides": {
         "next-query-params": {
