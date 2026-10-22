@@ -25,7 +25,7 @@
         "@orchestrator-ui/orchestrator-ui-components": "10.0.2",
         "@reduxjs/toolkit": "2.13.0",
         "moment": "2.31.0",
-        "next": "16.4.0",
+        "next": "16.4.1",
         "next-intl": "4.14.9",
         "next-query-params": "5.1.0",
         "process": "0.11.10",
