@@ -2,7 +2,7 @@
     "name": "nsi-orchestrator-ui",
     "version": "0.0.0",
     "private": true,
-    "packageManager": "npm@11.16.0",
+    "packageManager": "npm@12.2.1",
     "engines": {
         "npm": "12.2.0"
     },
