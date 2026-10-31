@@ -39,7 +39,7 @@
         "@orchestrator-ui/tsconfig": "1.5.1",
         "@testing-library/jest-dom": "7.0.1",
         "@trivago/prettier-plugin-sort-imports": "6.0.2",
-        "@types/node": "25.9.9",
+        "@types/node": "26.6.5",
         "@types/react": "18.3.31",
         "@types/react-dom": "18.3.7",
         "@types/react-no-ssr": "1.1.8",
