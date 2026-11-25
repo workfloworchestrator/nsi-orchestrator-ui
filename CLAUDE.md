@@ -22,6 +22,8 @@ values, not hard-coded here.
 - `pages/_app.tsx` — providers, page `<title>`, side-nav via `addMenuItems`
   (`overrideMenuItems` prop), logo wiring.
 - `pages/api/auth/[...nextauth].ts` — NextAuth + generic OIDC provider.
+- `auth/shareRefresh.ts` — concurrent session requests share one token refresh
+  (single-use refresh tokens); per process, so keep one replica.
 - `components/AppLogo/AppLogo.tsx` — wordmark fallback; `APP_LOGO_URL` env
   swaps in an image, no code change needed.
 - `translations/` — per-locale JSON merged over the library defaults + provider.

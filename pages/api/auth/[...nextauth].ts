@@ -8,6 +8,8 @@ import {
     getEnvironmentVariables,
 } from '@orchestrator-ui/orchestrator-ui-components';
 
+import { shareRefresh } from '@/auth/shareRefresh';
+
 const {
     OAUTH2_ACTIVE,
     OAUTH2_CLIENT_ID,
@@ -68,15 +70,20 @@ const calculateExpirationDate = (expiresIn?: number) => {
 
     return getCurrentDateInSeconds() + expiresIn;
 };
-const getWellKnownData = async () => {
+
+// Every request sharing a refresh waits for it, so one deadline covers discovery and token request.
+const REFRESH_TIMEOUT_MS = 10_000;
+
+const getWellKnownData = async (signal: AbortSignal) => {
     const wellKnownUrl = new URL(OIDC_CONF_FULL_WELL_KNOWN_URL);
-    const wellKnown = await fetch(wellKnownUrl);
+    const wellKnown = await fetch(wellKnownUrl, { signal });
     return await wellKnown.json();
 };
+// Rejects on failure; the one caller shares that rejection, so the error is logged once.
 async function refreshAccessToken(token: JWT): Promise<JWT> {
-    const { token_endpoint } = await getWellKnownData();
-
     try {
+        const signal = AbortSignal.timeout(REFRESH_TIMEOUT_MS);
+        const { token_endpoint } = await getWellKnownData(signal);
         const raw = {
             client_id: OAUTH2_CLIENT_ID,
             client_secret: OAUTH2_CLIENT_SECRET,
@@ -87,38 +94,35 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
         const response = await fetch(token_endpoint, {
             method: 'POST',
             body: new URLSearchParams(raw),
+            signal,
         });
 
-        if (response.ok) {
-            const data: {
-                access_token: string;
-                expires_in: number;
-                refresh_token: string;
-                refresh_expires_in: number;
-            } = await response.json();
-
-            return {
-                ...token,
-                accessToken: data.access_token,
-                accessTokenExpiresAt: calculateExpirationDate(data.expires_in),
-                refreshToken: data.refresh_token,
-                refreshTokenExpiresAt: calculateExpirationDate(
-                    data.refresh_expires_in,
-                ),
-            };
-        } else {
-            console.error(
-                'An error occurred while refreshing the access token: ',
-                response.statusText,
-            );
-            return token;
+        if (!response.ok) {
+            throw new Error(response.statusText);
         }
+
+        const data: {
+            access_token: string;
+            expires_in: number;
+            refresh_token: string;
+            refresh_expires_in: number;
+        } = await response.json();
+
+        return {
+            ...token,
+            accessToken: data.access_token,
+            accessTokenExpiresAt: calculateExpirationDate(data.expires_in),
+            refreshToken: data.refresh_token,
+            refreshTokenExpiresAt: calculateExpirationDate(
+                data.refresh_expires_in,
+            ),
+        };
     } catch (error) {
         console.error(
             'An error occurred while refreshing the access token: ',
             error,
         );
-        return token;
+        throw error;
     }
 }
 
@@ -198,7 +202,21 @@ export const authOptions: AuthOptions = {
                 return token;
             }
 
-            return await refreshAccessToken(token);
+            const refreshToken = token.refreshToken as string | undefined;
+            if (!refreshToken) {
+                return token;
+            }
+
+            try {
+                const shared = await shareRefresh(refreshToken, () =>
+                    refreshAccessToken(token),
+                );
+                // Each caller gets its own copy of the shared token.
+                return { ...shared };
+            } catch {
+                // A rejection would make NextAuth clear the session cookie.
+                return token;
+            }
         },
         async session({
             session,

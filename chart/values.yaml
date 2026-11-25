@@ -1,5 +1,6 @@
 # Default values for nsi-orchestrator-ui.
 
+# Keep at 1: concurrent token refreshes are shared per process (see README, Authentication).
 replicaCount: 1
 
 image:
@@ -145,6 +146,7 @@ readinessProbe:
     port: 3000
   initialDelaySeconds: 5
 
+# Leave disabled: concurrent token refreshes are shared per process (see README, Authentication).
 autoscaling:
   enabled: false
   minReplicas: 1
