@@ -1,5 +1,6 @@
 /** @jest-environment node */
 import {
+    DiscoveryError,
     TokenEndpointError,
     failureFields,
     logAuth,
@@ -50,12 +51,44 @@ describe('logAuth', () => {
 });
 
 describe('userId', () => {
-    it('is a short, stable hash that does not contain the identifier', () => {
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    it('is a short, stable pseudonym that does not contain the identifier', () => {
         const id = userId('subject-1');
 
-        expect(id).toMatch(/^[0-9a-f]{8}$/);
+        expect(id).toMatch(/^[0-9a-f]{12}$/);
         expect(userId('subject-1')).toBe(id);
         expect(userId('subject-2')).not.toBe(id);
+    });
+
+    it('depends on the secret', () => {
+        const env = jest.replaceProperty(process, 'env', {
+            ...process.env,
+            NEXTAUTH_SECRET: 'secret-a',
+        });
+        const first = userId('subject-1');
+
+        env.replaceValue({ ...process.env, NEXTAUTH_SECRET: 'secret-b' });
+
+        expect(userId('subject-1')).not.toBe(first);
+    });
+
+    it('falls back to AUTH_SECRET, like NextAuth', () => {
+        const env = jest.replaceProperty(process, 'env', {
+            ...process.env,
+            NEXTAUTH_SECRET: 'secret-a',
+        });
+        const first = userId('subject-1');
+
+        env.replaceValue({
+            ...process.env,
+            NEXTAUTH_SECRET: undefined,
+            AUTH_SECRET: 'secret-a',
+        });
+
+        expect(userId('subject-1')).toBe(first);
     });
 
     it.each([undefined, ''])('has no id for %p', (sub) => {
@@ -90,7 +123,23 @@ describe('failureFields', () => {
             fields: { reason: 'TimeoutError' },
         },
         {
+            error: new DiscoveryError(503),
+            fields: { reason: 'discovery', status: 503 },
+        },
+        {
             error: new TypeError('fetch failed'),
+            fields: { reason: 'TypeError' },
+        },
+        {
+            error: new TypeError('fetch failed', {
+                cause: { code: 'ECONNREFUSED' },
+            }),
+            fields: { reason: 'TypeError', cause: 'ECONNREFUSED' },
+        },
+        {
+            error: new TypeError('fetch failed', {
+                cause: { code: 'connect to 10.0.0.1 refused' },
+            }),
             fields: { reason: 'TypeError' },
         },
         { error: 'unexpected', fields: { reason: 'unknown' } },

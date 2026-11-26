@@ -48,11 +48,17 @@ export const needsRefresh = (token: JWT, now = getCurrentDateInSeconds()) => {
     return !(typeof refreshAt === 'number' && now < refreshAt);
 };
 
-export const isExpired = (token: JWT, now = getCurrentDateInSeconds()) =>
-    !(
-        typeof token.accessTokenExpiresAt === 'number' &&
-        now < token.accessTokenExpiresAt
-    );
+export const accessTokenState = (
+    token: JWT,
+    now = getCurrentDateInSeconds(),
+) => {
+    const expiresAt = token.accessTokenExpiresAt;
+    if (typeof expiresAt !== 'number') {
+        return 'unknown';
+    }
+
+    return now < expiresAt ? 'valid' : 'expired';
+};
 
 // After a failed refresh, wait before the next attempt, but not past the expiry.
 export const retryLater = (

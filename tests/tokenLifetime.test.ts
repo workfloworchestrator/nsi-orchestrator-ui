@@ -1,10 +1,10 @@
 import { JWT } from 'next-auth/jwt';
 
 import {
+    accessTokenState,
     accessTokenTimes,
     calculateExpirationDate,
     calculateRefreshDate,
-    isExpired,
     needsRefresh,
     retryLater,
 } from '@/auth/tokenLifetime';
@@ -89,23 +89,20 @@ describe('needsRefresh', () => {
     );
 });
 
-describe('isExpired', () => {
+describe('accessTokenState', () => {
     it.each([
-        { expires: 600, expired: false },
-        { expires: 0, expired: true },
-        { expires: -10, expired: true },
-        { expires: undefined, expired: true },
-    ])(
-        'a token expiring in $expires s is expired: $expired',
-        ({ expires, expired }) => {
-            const token: JWT = {
-                accessTokenExpiresAt:
-                    expires === undefined ? undefined : NOW + expires,
-            };
+        { expires: 600, state: 'valid' },
+        { expires: 0, state: 'expired' },
+        { expires: -10, state: 'expired' },
+        { expires: undefined, state: 'unknown' },
+    ])('a token expiring in $expires s is $state', ({ expires, state }) => {
+        const token: JWT = {
+            accessTokenExpiresAt:
+                expires === undefined ? undefined : NOW + expires,
+        };
 
-            expect(isExpired(token, NOW)).toBe(expired);
-        },
-    );
+        expect(accessTokenState(token, NOW)).toBe(state);
+    });
 });
 
 describe('retryLater', () => {

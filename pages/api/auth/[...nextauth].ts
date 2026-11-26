@@ -9,6 +9,7 @@ import {
 } from '@orchestrator-ui/orchestrator-ui-components';
 
 import {
+    DiscoveryError,
     TokenEndpointError,
     failureFields,
     logAuth,
@@ -17,10 +18,10 @@ import {
 } from '@/auth/log';
 import { shareRefresh } from '@/auth/shareRefresh';
 import {
+    accessTokenState,
     accessTokenTimes,
     calculateExpirationDate,
     getCurrentDateInSeconds,
-    isExpired,
     needsRefresh,
     retryLater,
 } from '@/auth/tokenLifetime';
@@ -82,13 +83,19 @@ const REFRESH_TIMEOUT_MS = 10_000;
 const getWellKnownData = async (signal: AbortSignal) => {
     const wellKnownUrl = new URL(OIDC_CONF_FULL_WELL_KNOWN_URL);
     const wellKnown = await fetch(wellKnownUrl, { signal });
-    return await wellKnown.json();
+    // Read in every case, so the connection is released.
+    const data = await wellKnown.json().catch(() => undefined);
+    if (!wellKnown.ok || typeof data?.token_endpoint !== 'string') {
+        throw new DiscoveryError(wellKnown.status);
+    }
+
+    return data;
 };
 // Rejects on failure; the one caller shares that rejection, so the error is logged once.
 async function refreshAccessToken(token: JWT): Promise<JWT> {
     const logged = {
         user: userId(token.sub),
-        access_token: isExpired(token) ? 'expired' : 'valid',
+        access_token: accessTokenState(token),
     };
 
     try {
@@ -117,7 +124,8 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
         const data: {
             access_token: string;
             expires_in: number | string;
-            refresh_token: string;
+            // Left out when the provider does not rotate refresh tokens (RFC 6749 section 6).
+            refresh_token?: string;
             refresh_expires_in: number | string;
         } = await response.json();
 
@@ -136,7 +144,7 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
             ...token,
             accessToken: data.access_token,
             ...times,
-            refreshToken: data.refresh_token,
+            refreshToken: data.refresh_token ?? token.refreshToken,
             refreshTokenExpiresAt: calculateExpirationDate(
                 data.refresh_expires_in,
             ),

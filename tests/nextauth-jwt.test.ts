@@ -26,6 +26,7 @@ const TOKEN_ENDPOINT = 'https://idp.test/token';
 const startIdp = (
     validRefreshTokens: string[],
     expiresIn: number | string = 3600,
+    rotates = true,
 ) => {
     const valid = new Set(validRefreshTokens);
     let issued = 0;
@@ -53,10 +54,11 @@ const startIdp = (
         }
 
         issued += 1;
-        valid.add(`refresh-${issued}`);
+        const rotated = rotates ? `refresh-${issued}` : undefined;
+        valid.add(rotated ?? refreshToken);
         return Response.json({
             access_token: `access-${issued}`,
-            refresh_token: `refresh-${issued}`,
+            refresh_token: rotated,
             expires_in: expiresIn,
         });
     });
@@ -200,6 +202,35 @@ describe('jwt callback refresh', () => {
             'auth event=refresh outcome=failed access_token=expired reason=TimeoutError',
         );
         expect(results).toEqual(allEqual(expect.objectContaining(token)));
+    });
+
+    it.each([
+        { why: 'failing', status: 502, body: 'Bad Gateway' },
+        { why: 'unreadable', status: 200, body: 'not json' },
+    ])(
+        'logs a $why discovery document by its status',
+        async ({ status, body }) => {
+            jest.spyOn(global, 'fetch').mockImplementation(
+                async () => new Response(body, { status }),
+            );
+
+            await jwt(expiredToken('refresh-0'));
+
+            expect(warnings).toHaveBeenCalledWith(
+                `auth event=refresh outcome=failed access_token=expired reason=discovery status=${status}`,
+            );
+        },
+    );
+
+    it('keeps the refresh token when the provider does not rotate it', async () => {
+        startIdp(['refresh-0'], 3600, false);
+
+        const refreshed = await jwt(expiredToken('refresh-0'));
+
+        expect(refreshed).toMatchObject({
+            accessToken: 'access-1',
+            refreshToken: 'refresh-0',
+        });
     });
 
     it('does not contact the IdP without a refresh token', async () => {

@@ -152,17 +152,22 @@ The server writes one line per authentication event, `info` to stdout and
 failures as `warn` to stderr:
 
 ```
-auth event=signin outcome=ok user=3f9a1c02 refresh_token=present expires_in=3600
-auth event=refresh outcome=ok user=3f9a1c02 access_token=valid refresh_in=3300
-auth event=refresh outcome=failed user=3f9a1c02 access_token=expired status=400 error=invalid_grant
-auth event=signout user=3f9a1c02
+auth event=signin outcome=ok user=3f9a1c02b7d4 refresh_token=present expires_in=3600
+auth event=refresh outcome=ok user=3f9a1c02b7d4 access_token=valid refresh_in=3300
+auth event=refresh outcome=failed user=3f9a1c02b7d4 access_token=expired status=400 error=invalid_grant
+auth event=refresh outcome=failed user=3f9a1c02b7d4 access_token=valid reason=TypeError cause=ECONNREFUSED
+auth event=refresh outcome=failed user=3f9a1c02b7d4 access_token=valid reason=discovery status=502
+auth event=signout user=3f9a1c02b7d4
 ```
 
-`user` is a short hash of the subject. `access_token` is the state of the
-access token when the refresh started (`valid` means an early refresh) and
-`refresh_in` the seconds until the next one. Tokens, cookies, profile data
-and error descriptions are never logged. A session that ends or is renewed
-in the browser shows up as `signout` or a new `signin`.
+`user` is an HMAC of the subject, keyed with the NextAuth secret, so it
+changes when the secret does. `access_token` is the state of the access token
+when the refresh started (`valid` means an early refresh, `unknown` that the
+provider sent no lifetime) and `refresh_in` the seconds until the next one.
+`reason` is the error name of a request that got no answer and `cause` its
+system error code. Tokens, cookies, profile data and error descriptions are
+never logged. A session that ends or is renewed in the browser shows up as
+`signout` or a new `signin`.
 
 ### UI feature toggles
 

@@ -27,7 +27,7 @@ values, not hard-coded here.
 - `auth/tokenLifetime.ts` — token expiry and refresh-date arithmetic: refresh
   shortly before expiry, wait after a failed refresh.
 - `auth/log.ts` — one-line auth events (`auth event=… key=value`). Never log
-  tokens, cookies, profile data or error descriptions; `user` is a hash.
+  tokens, cookies, profile data or error descriptions; `user` is a keyed hash.
 - `components/AppLogo/AppLogo.tsx` — wordmark fallback; `APP_LOGO_URL` env
   swaps in an image, no code change needed.
 - `translations/` — per-locale JSON merged over the library defaults + provider.
