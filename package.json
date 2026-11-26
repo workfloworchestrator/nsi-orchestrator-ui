@@ -22,7 +22,7 @@
         "@elastic/eui": "122.1.0",
         "@emotion/css": "11.13.5",
         "@emotion/react": "11.14.0",
-        "@orchestrator-ui/orchestrator-ui-components": "10.0.2",
+        "@orchestrator-ui/orchestrator-ui-components": "12.1.0",
         "@reduxjs/toolkit": "2.13.0",
         "moment": "2.31.0",
         "next": "16.4.5",

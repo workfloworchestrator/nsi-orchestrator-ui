@@ -10,8 +10,9 @@ npm install --save-exact --save-dev @orchestrator-ui/jest-config@<version>
 npm install --save-exact --save-dev @orchestrator-ui/tsconfig@<version>
 ```
 
-Releases younger than `min-release-age` in `.npmrc` are refused; add `--min-release-age=0` to install
-one anyway.
+Releases younger than `min-release-age` in `.npmrc` are refused; add
+`--min-release-age-exclude=<package>` to install one anyway. Do not use
+`--min-release-age=0`: it also admits young indirect dependencies.
 
 Before upgrading, read the library release notes for breaking changes and the orchestrator-core
 version they require. Then run `npm run tsc`, `npm run lint` and `npm test`.

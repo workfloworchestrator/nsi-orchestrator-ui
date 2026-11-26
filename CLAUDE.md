@@ -19,8 +19,8 @@ values, not hard-coded here.
 
 - `configuration/configuration.ts` — env vars → `OrchestratorConfig` passed to
   the library.
-- `pages/_app.tsx` — providers, page `<title>`, side-nav via `addMenuItems`
-  (`overrideMenuItems` prop), logo wiring.
+- `pages/_app.tsx` — providers, page `<title>`, logo wiring. The side-nav uses
+  the library defaults; extra items go through the `overrideMenuItems` prop.
 - `pages/api/auth/[...nextauth].ts` — NextAuth + generic OIDC provider.
 - `auth/shareRefresh.ts` — concurrent session requests share one token refresh
   (single-use refresh tokens); per process, so keep one replica.
@@ -34,16 +34,19 @@ values, not hard-coded here.
 - `chart/` — Helm chart; image is `ghcr.io/workfloworchestrator/nsi-orchestrator-ui`.
 
 There is **no** agent/CopilotKit page and no `example-form` here (they exist in
-the upstream fork but were removed). Only a `Search` entry is added to the nav.
+the upstream fork but were removed), and no `Search` page (library 11 removed
+`WfoSearch`).
 
 ## Dependency cooldown
 
 `min-release-age=8` in `.npmrc` and `minimumReleaseAge` in
 `.github/renovate.json` must stay equal. npm enforces the cooldown on indirect
-dependencies, which Renovate cannot. An urgent fix younger than that needs
-`npm install <pkg>@<version> --min-release-age=0`. Lock file maintenance
-sets `minimumReleaseAge` to `null`: it has no release timestamp, so Renovate
-would keep `renovate/stability-days` pending forever and never automerge it.
+dependencies, which Renovate cannot. A package younger than that needs
+`npm install <pkg>@<version> --min-release-age-exclude=<pkg>` (npm 11.20), not
+`--min-release-age=0`, which also admits young indirect dependencies. Lock file
+maintenance sets `minimumReleaseAge` to `null`: it has no release timestamp, so
+Renovate would keep `renovate/stability-days` pending forever and never
+automerge it.
 
 Renovate uses `rangeStrategy: pin`. Keep `orchestrator-ui-components` on an
 exact version (never `*`), so library majors arrive as a separate PR instead

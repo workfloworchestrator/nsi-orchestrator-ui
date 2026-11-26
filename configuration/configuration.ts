@@ -4,6 +4,8 @@ import {
     getEnvironmentVariables,
 } from '@orchestrator-ui/orchestrator-ui-components';
 
+const isTrue = (value?: string) => value?.toLowerCase() === 'true';
+
 export const getInitialOrchestratorConfig = (): OrchestratorConfig => {
     const {
         USE_THEME_TOGGLE,
@@ -17,6 +19,8 @@ export const getInitialOrchestratorConfig = (): OrchestratorConfig => {
         WORKFLOW_INFORMATION_LINK_URL,
         SHOW_WORKFLOW_INFORMATION_LINK,
         SHOW_WORKFLOW_USER_GUIDE,
+        EXPAND_WORKFLOW_USER_GUIDE_ON_START,
+        SHOW_BETA_WORKFLOW_LAYOUT_TOGGLE,
         OAUTH2_ACTIVE,
         ENABLE_SUPPORT_MENU_ITEM,
         SUPPORT_MENU_ITEM_URL,
@@ -35,6 +39,8 @@ export const getInitialOrchestratorConfig = (): OrchestratorConfig => {
         'WORKFLOW_INFORMATION_LINK_URL',
         'SHOW_WORKFLOW_INFORMATION_LINK',
         'SHOW_WORKFLOW_USER_GUIDE',
+        'EXPAND_WORKFLOW_USER_GUIDE_ON_START',
+        'SHOW_BETA_WORKFLOW_LAYOUT_TOGGLE',
         'OAUTH2_ACTIVE',
         'ENABLE_SUPPORT_MENU_ITEM',
         'SUPPORT_MENU_ITEM_URL',
@@ -55,17 +61,18 @@ export const getInitialOrchestratorConfig = (): OrchestratorConfig => {
         environmentName: ENVIRONMENT_NAME || Environment.DEVELOPMENT,
         orchestratorWebsocketUrl: ORCHESTRATOR_WEBSOCKET_URL,
         authActive: OAUTH2_ACTIVE?.toLowerCase() != 'false',
-        useWebSockets: USE_WEB_SOCKETS?.toLowerCase() === 'true',
-        useThemeToggle: USE_THEME_TOGGLE?.toLowerCase() === 'true',
+        useWebSockets: isTrue(USE_WEB_SOCKETS),
+        useThemeToggle: isTrue(USE_THEME_TOGGLE),
         workflowInformationLinkUrl: WORKFLOW_INFORMATION_LINK_URL,
-        showWorkflowInformationLink:
-            SHOW_WORKFLOW_INFORMATION_LINK?.toLowerCase() === 'true',
-        showWorkflowUserGuide:
-            SHOW_WORKFLOW_USER_GUIDE?.toLowerCase() === 'true',
-        enableSupportMenuItem:
-            ENABLE_SUPPORT_MENU_ITEM?.toLowerCase() === 'true',
+        showWorkflowInformationLink: isTrue(SHOW_WORKFLOW_INFORMATION_LINK),
+        showWorkflowUserGuide: isTrue(SHOW_WORKFLOW_USER_GUIDE),
+        expandWorkflowUserGuideOnStart: isTrue(
+            EXPAND_WORKFLOW_USER_GUIDE_ON_START,
+        ),
+        showBetaWorkflowLayoutToggle: isTrue(SHOW_BETA_WORKFLOW_LAYOUT_TOGGLE),
+        enableSupportMenuItem: isTrue(ENABLE_SUPPORT_MENU_ITEM),
         supportMenuItemUrl: SUPPORT_MENU_ITEM_URL,
-        enableAoStackStatus: ENABLE_AO_STACK_STATUS?.toLowerCase() === 'true',
+        enableAoStackStatus: isTrue(ENABLE_AO_STACK_STATUS),
         aoStackStatusUrl: AO_STACK_STATUS_URL,
         startWorkflowFilters,
     };

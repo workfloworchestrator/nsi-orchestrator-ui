@@ -45,7 +45,6 @@ deployment onto Kubernetes.
 
 - Integration with nsi-orchestrator, with sensible defaults
 - Subscription, workflow, task and metadata management pages
-- Built-in **search** page
 - OAuth2 / OIDC login via NextAuth with refresh-token rotation
 - Internationalization: `en-GB` (default) and `nl-NL`, both extensible
 - Theme toggle (light / dark) and per-environment banners
@@ -171,20 +170,22 @@ never logged. A session that ends or is renewed in the browser shows up as
 
 ### UI feature toggles
 
-| Variable                         | Description                                                                                                                                        |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ENVIRONMENT_NAME`               | Label shown in the top bar (e.g. `DEVELOPMENT`, `STAGING`, `PRODUCTION`).                                                                          |
-| `APP_LOGO_URL`                   | URL of a logo image shown beside the built-in Workflow Orchestrator icon. See [Branding](#branding-logo).                                          |
-| `APP_NAME`                       | Header wordmark text and browser tab title (e.g. `ANA Orchestrator`); defaults to the Workflow Orchestrator wordmark.                              |
-| `USE_THEME_TOGGLE`               | `true` to show the light/dark theme switcher.                                                                                                      |
-| `SHOW_WORKFLOW_INFORMATION_LINK` | `true` to show a "more info" link on workflow pages.                                                                                               |
-| `WORKFLOW_INFORMATION_LINK_URL`  | Target URL of that link.                                                                                                                           |
-| `SHOW_WORKFLOW_USER_GUIDE`       | `true` to show the workflow user guide.                                                                                                            |
-| `ENABLE_SUPPORT_MENU_ITEM`       | `true` to add a "Support" menu item.                                                                                                               |
-| `SUPPORT_MENU_ITEM_URL`          | Target URL for the support menu item.                                                                                                              |
-| `ENABLE_AO_STACK_STATUS`         | `true` to show the AO-stack status indicator.                                                                                                      |
-| `AO_STACK_STATUS_URL`            | Endpoint that the stack-status widget polls.                                                                                                       |
-| `START_WORKFLOW_FILTERS`         | Pipe-separated list of workflow categories to expose on the start page. Underscores are converted to spaces, e.g. `Create \| Modify \| Terminate`. |
+| Variable                              | Description                                                                                                                                        |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ENVIRONMENT_NAME`                    | Label shown in the top bar (e.g. `DEVELOPMENT`, `STAGING`, `PRODUCTION`).                                                                          |
+| `APP_LOGO_URL`                        | URL of a logo image shown beside the built-in Workflow Orchestrator icon. See [Branding](#branding-logo).                                          |
+| `APP_NAME`                            | Header wordmark text and browser tab title (e.g. `ANA Orchestrator`); defaults to the Workflow Orchestrator wordmark.                              |
+| `USE_THEME_TOGGLE`                    | `true` to show the light/dark theme switcher.                                                                                                      |
+| `SHOW_WORKFLOW_INFORMATION_LINK`      | `true` to show a "more info" link on workflow pages.                                                                                               |
+| `WORKFLOW_INFORMATION_LINK_URL`       | Target URL of that link.                                                                                                                           |
+| `SHOW_WORKFLOW_USER_GUIDE`            | `true` to show the workflow user guide.                                                                                                            |
+| `EXPAND_WORKFLOW_USER_GUIDE_ON_START` | `true` to open the workflow user guide expanded; needs `SHOW_WORKFLOW_USER_GUIDE`.                                                                 |
+| `SHOW_BETA_WORKFLOW_LAYOUT_TOGGLE`    | `true` to show the "Layout: Classic \| New (beta)" toggle on the start-workflow and process detail pages.                                          |
+| `ENABLE_SUPPORT_MENU_ITEM`            | `true` to add a "Support" menu item.                                                                                                               |
+| `SUPPORT_MENU_ITEM_URL`               | Target URL for the support menu item.                                                                                                              |
+| `ENABLE_AO_STACK_STATUS`              | `true` to show the AO-stack status indicator.                                                                                                      |
+| `AO_STACK_STATUS_URL`                 | Endpoint that the stack-status widget polls.                                                                                                       |
+| `START_WORKFLOW_FILTERS`              | Pipe-separated list of workflow categories to expose on the start page. Underscores are converted to spaces, e.g. `Create \| Modify \| Terminate`. |
 
 ## Project layout
 
@@ -193,9 +194,8 @@ never logged. A session that ends or is renewed in the browser shows up as
 ├── components/AppLogo/        # branding override rendered in the side nav
 ├── configuration/             # env → OrchestratorConfig mapping
 ├── pages/                     # Next.js routes (pages router)
-│   ├── _app.tsx               # providers, menu, auth wiring
+│   ├── _app.tsx               # providers, logo, auth wiring
 │   ├── index.tsx              # WfoStartPage
-│   ├── search.tsx
 │   ├── settings.tsx
 │   ├── subscriptions/         # list + detail
 │   ├── workflows/             # list, detail, "new"
@@ -217,11 +217,11 @@ Most pages are one-liners that delegate to a component from
 `@orchestrator-ui/orchestrator-ui-components`. For example:
 
 ```tsx
-// pages/search.tsx
-import { WfoSearch } from '@orchestrator-ui/orchestrator-ui-components';
+// pages/index.tsx
+import { WfoStartPage } from '@orchestrator-ui/orchestrator-ui-components';
 
-export default function SearchPage() {
-    return <WfoSearch />;
+export default function Index() {
+    return <WfoStartPage />;
 }
 ```
 
@@ -231,18 +231,18 @@ This makes it easy to override individual screens by editing one file.
 
 ### Navigation & menu items
 
-The side navigation is configured in `pages/_app.tsx` via the
-`overrideMenuItems` prop on `<WfoPageTemplate>`. This repo appends a
-single **Search** entry to the default menu items:
+The side navigation uses the library's default menu items. To change it, pass
+an `overrideMenuItems` function to `<WfoPageTemplate>` in `pages/_app.tsx`; it
+receives the default items and returns the list to show:
 
 ```tsx
 const addMenuItems = (defaultMenuItems) => [
     ...defaultMenuItems,
-    { name: 'Search', id: '20', href: '/search' /* … */ },
+    { name: 'Example', id: '20', href: '/example' /* … */ },
 ];
 ```
 
-Add, remove, or reorder entries here to shape the navigation.
+Add, remove, or reorder entries there to shape the navigation.
 
 ### Branding (logo)
 
@@ -295,8 +295,9 @@ To add a new locale:
 ### Adding pages
 
 Because this is the Next.js **pages router**, you add a new route simply
-by creating a file under `pages/`. To make it appear in the nav, add an
-entry to `addMenuItems` in `pages/_app.tsx`.
+by creating a file under `pages/`. To make it appear in the nav, pass an
+`overrideMenuItems` function to `<WfoPageTemplate>`, see
+[Navigation & menu items](#navigation--menu-items).
 
 ## npm scripts
 

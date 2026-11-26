@@ -17,6 +17,8 @@ const FULL_ENV: Record<string, string> = {
     WORKFLOW_INFORMATION_LINK_URL: 'https://docs.example.net',
     SHOW_WORKFLOW_INFORMATION_LINK: 'true',
     SHOW_WORKFLOW_USER_GUIDE: 'true',
+    EXPAND_WORKFLOW_USER_GUIDE_ON_START: 'true',
+    SHOW_BETA_WORKFLOW_LAYOUT_TOGGLE: 'true',
     OAUTH2_ACTIVE: 'true',
     ENABLE_SUPPORT_MENU_ITEM: 'true',
     SUPPORT_MENU_ITEM_URL: 'https://support.example.net',
@@ -47,6 +49,8 @@ describe('getInitialOrchestratorConfig', () => {
             workflowInformationLinkUrl: 'https://docs.example.net',
             showWorkflowInformationLink: true,
             showWorkflowUserGuide: true,
+            expandWorkflowUserGuideOnStart: true,
+            showBetaWorkflowLayoutToggle: true,
             enableSupportMenuItem: true,
             supportMenuItemUrl: 'https://support.example.net',
             enableAoStackStatus: true,
@@ -64,6 +68,7 @@ describe('getInitialOrchestratorConfig', () => {
         });
     });
 
+    // Every flag goes through the same parser.
     it.each([
         ['true', true],
         ['TRUE', true],
