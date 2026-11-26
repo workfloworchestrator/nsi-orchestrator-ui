@@ -8,10 +8,19 @@ import {
     getEnvironmentVariables,
 } from '@orchestrator-ui/orchestrator-ui-components';
 
+import {
+    TokenEndpointError,
+    failureFields,
+    logAuth,
+    readOAuthErrorCode,
+    userId,
+} from '@/auth/log';
 import { shareRefresh } from '@/auth/shareRefresh';
 import {
     accessTokenTimes,
     calculateExpirationDate,
+    getCurrentDateInSeconds,
+    isExpired,
     needsRefresh,
     retryLater,
 } from '@/auth/tokenLifetime';
@@ -77,6 +86,11 @@ const getWellKnownData = async (signal: AbortSignal) => {
 };
 // Rejects on failure; the one caller shares that rejection, so the error is logged once.
 async function refreshAccessToken(token: JWT): Promise<JWT> {
+    const logged = {
+        user: userId(token.sub),
+        access_token: isExpired(token) ? 'expired' : 'valid',
+    };
+
     try {
         const signal = AbortSignal.timeout(REFRESH_TIMEOUT_MS);
         const { token_endpoint } = await getWellKnownData(signal);
@@ -94,7 +108,10 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
         });
 
         if (!response.ok) {
-            throw new Error(response.statusText);
+            throw new TokenEndpointError(
+                response.status,
+                await readOAuthErrorCode(response),
+            );
         }
 
         const data: {
@@ -104,19 +121,31 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
             refresh_expires_in: number | string;
         } = await response.json();
 
+        const times = accessTokenTimes(
+            calculateExpirationDate(data.expires_in),
+        );
+        logAuth('refresh', {
+            outcome: 'ok',
+            ...logged,
+            refresh_in:
+                times.accessTokenRefreshAt &&
+                times.accessTokenRefreshAt - getCurrentDateInSeconds(),
+        });
+
         return {
             ...token,
             accessToken: data.access_token,
-            ...accessTokenTimes(calculateExpirationDate(data.expires_in)),
+            ...times,
             refreshToken: data.refresh_token,
             refreshTokenExpiresAt: calculateExpirationDate(
                 data.refresh_expires_in,
             ),
         };
     } catch (error) {
-        console.error(
-            'An error occurred while refreshing the access token: ',
-            error,
+        logAuth(
+            'refresh',
+            { outcome: 'failed', ...logged, ...failureFields(error) },
+            'warn',
         );
         throw error;
     }
@@ -171,8 +200,23 @@ const wfoProvider: OAuthConfig<WfoUserProfile> = {
 export const authOptions: AuthOptions = {
     providers: isOauth2Enabled ? [wfoProvider] : [],
     callbacks: {
-        async signIn({ profile }) {
-            return hasRequiredGroup(profile);
+        async signIn({ profile, account }) {
+            const allowed = hasRequiredGroup(profile);
+            logAuth(
+                'signin',
+                {
+                    outcome: allowed ? 'ok' : 'denied',
+                    user: userId(profile?.sub),
+                    refresh_token: account?.refresh_token
+                        ? 'present'
+                        : 'absent',
+                    expires_in:
+                        account?.expires_at &&
+                        account.expires_at - getCurrentDateInSeconds(),
+                },
+                allowed ? 'info' : 'warn',
+            );
+            return allowed;
         },
         async jwt({ token, account, profile }) {
             // First time after signing in
@@ -225,6 +269,11 @@ export const authOptions: AuthOptions = {
                 accessTokenExpiresAt: token.accessTokenExpiresAt as number,
                 refreshTokenExpiresAt: token.refreshTokenExpiresAt as number,
             };
+        },
+    },
+    events: {
+        signOut({ token }) {
+            logAuth('signout', { user: userId(token?.sub) });
         },
     },
 };

@@ -1,20 +1,23 @@
 /** @jest-environment node */
 import { JWT } from 'next-auth/jwt';
 
+import { userId } from '@/auth/log';
 import { REUSE_WINDOW_MS } from '@/auth/shareRefresh';
 
 // The mock IdP issues single-use refresh tokens: a refresh token works once, then it is gone.
 
+const mockEnv: Record<string, string> = {
+    OAUTH2_ACTIVE: 'true',
+    OAUTH2_CLIENT_ID: 'client',
+    OAUTH2_CLIENT_SECRET: 'secret',
+    NEXTAUTH_PROVIDER_ID: 'idp',
+    NEXTAUTH_PROVIDER_NAME: 'IdP',
+    OIDC_CONF_FULL_WELL_KNOWN_URL:
+        'https://idp.test/.well-known/openid-configuration',
+};
+
 jest.mock('@orchestrator-ui/orchestrator-ui-components', () => ({
-    getEnvironmentVariables: () => ({
-        OAUTH2_ACTIVE: 'true',
-        OAUTH2_CLIENT_ID: 'client',
-        OAUTH2_CLIENT_SECRET: 'secret',
-        NEXTAUTH_PROVIDER_ID: 'idp',
-        NEXTAUTH_PROVIDER_NAME: 'IdP',
-        OIDC_CONF_FULL_WELL_KNOWN_URL:
-            'https://idp.test/.well-known/openid-configuration',
-    }),
+    getEnvironmentVariables: () => mockEnv,
 }));
 
 const CONCURRENT_REQUESTS = 13;
@@ -39,10 +42,14 @@ const startIdp = (
         tokenRequests.push(refreshToken);
 
         if (!valid.delete(refreshToken)) {
-            return new Response('{}', {
-                status: 400,
-                statusText: 'Bad Request',
-            });
+            // Descriptions can echo the request, so the logs must not carry them.
+            return Response.json(
+                {
+                    error: 'invalid_grant',
+                    error_description: `Refresh token ${refreshToken} is not valid`,
+                },
+                { status: 400, statusText: 'Bad Request' },
+            );
         }
 
         issued += 1;
@@ -57,11 +64,15 @@ const startIdp = (
     return { tokenRequests, accept: (token: string) => valid.add(token) };
 };
 
-const loadJwtCallback = async () => {
+const loadAuthOptions = async () => {
     // A fresh module per test: the shared refreshes are module state.
     jest.resetModules();
     const { authOptions } = await import('@/pages/api/auth/[...nextauth]');
-    const jwt = authOptions.callbacks!.jwt!;
+    return authOptions;
+};
+
+const loadJwtCallback = async () => {
+    const jwt = (await loadAuthOptions()).callbacks!.jwt!;
 
     return (token: JWT, account?: Record<string, unknown>) =>
         jwt({ token, account } as Parameters<typeof jwt>[0]);
@@ -75,7 +86,8 @@ const expiredToken = (refreshToken?: string): JWT => ({
 
 describe('jwt callback refresh', () => {
     let jwt: Awaited<ReturnType<typeof loadJwtCallback>>;
-    let consoleError: jest.SpyInstance;
+    let warnings: jest.SpyInstance;
+    let infos: jest.SpyInstance;
 
     // The page load: every session request carries the same token.
     const burst = (token: JWT) =>
@@ -86,7 +98,8 @@ describe('jwt callback refresh', () => {
         Array(CONCURRENT_REQUESTS).fill(expected);
 
     beforeEach(async () => {
-        consoleError = jest.spyOn(console, 'error').mockImplementation();
+        warnings = jest.spyOn(console, 'warn').mockImplementation();
+        infos = jest.spyOn(console, 'info').mockImplementation();
         jwt = await loadJwtCallback();
     });
 
@@ -96,6 +109,8 @@ describe('jwt callback refresh', () => {
     });
 
     it('refreshes once for concurrent requests with the same expired token', async () => {
+        // A frozen clock: refresh_in is derived from more than one reading of it.
+        jest.useFakeTimers();
         const idp = startIdp(['refresh-0']);
 
         const results = await burst(expiredToken('refresh-0'));
@@ -104,7 +119,11 @@ describe('jwt callback refresh', () => {
         expect(
             jest.mocked(fetch).mock.calls.map(([, init]) => init?.signal),
         ).toEqual([expect.any(AbortSignal), expect.any(AbortSignal)]);
-        expect(consoleError).not.toHaveBeenCalled();
+        expect(warnings).not.toHaveBeenCalled();
+        expect(infos).toHaveBeenCalledTimes(1);
+        expect(infos).toHaveBeenCalledWith(
+            'auth event=refresh outcome=ok access_token=expired refresh_in=3300',
+        );
         expect(results).toEqual(
             allEqual(
                 expect.objectContaining({
@@ -150,7 +169,11 @@ describe('jwt callback refresh', () => {
         const failed = await burst(expiredToken('refresh-0'));
 
         expect(idp.tokenRequests).toEqual(['refresh-0']);
-        expect(consoleError).toHaveBeenCalledTimes(1);
+        // The status and the error code, not the description that echoes the refresh token.
+        expect(warnings).toHaveBeenCalledTimes(1);
+        expect(warnings).toHaveBeenCalledWith(
+            'auth event=refresh outcome=failed access_token=expired status=400 error=invalid_grant',
+        );
         expect(failed).toEqual(
             allEqual(expect.objectContaining({ refreshToken: 'refresh-0' })),
         );
@@ -172,7 +195,10 @@ describe('jwt callback refresh', () => {
         const results = await burst(token);
 
         expect(fetch).toHaveBeenCalledTimes(1);
-        expect(consoleError).toHaveBeenCalledTimes(1);
+        expect(warnings).toHaveBeenCalledTimes(1);
+        expect(warnings).toHaveBeenCalledWith(
+            'auth event=refresh outcome=failed access_token=expired reason=TimeoutError',
+        );
         expect(results).toEqual(allEqual(expect.objectContaining(token)));
     });
 
@@ -183,7 +209,8 @@ describe('jwt callback refresh', () => {
         const results = await burst(token);
 
         expect(fetch).not.toHaveBeenCalled();
-        expect(consoleError).not.toHaveBeenCalled();
+        expect(warnings).not.toHaveBeenCalled();
+        expect(infos).not.toHaveBeenCalled();
         expect(results).toEqual(allEqual(token));
     });
 
@@ -203,9 +230,11 @@ describe('jwt callback refresh', () => {
         // Valid for 10 more minutes, but past its refresh date.
         const dueToken = (): JWT => ({
             ...expiredToken('refresh-0'),
+            sub: 'subject-1',
             accessTokenExpiresAt: NOW + 600,
             accessTokenRefreshAt: NOW - 60,
         });
+        const user = `user=${userId('subject-1')}`;
 
         beforeEach(() => {
             jest.useFakeTimers().setSystemTime(NOW * 1000);
@@ -222,6 +251,9 @@ describe('jwt callback refresh', () => {
                 accessTokenExpiresAt: NOW + 3600,
                 accessTokenRefreshAt: NOW + 3300,
             });
+            expect(infos).toHaveBeenCalledWith(
+                `auth event=refresh outcome=ok ${user} access_token=valid refresh_in=3300`,
+            );
         });
 
         it('plans the first refresh when the user signs in', async () => {
@@ -249,7 +281,10 @@ describe('jwt callback refresh', () => {
                 accessToken: 'access-0',
                 accessTokenRefreshAt: NOW + 30,
             });
-            expect(consoleError).toHaveBeenCalledTimes(1);
+            expect(warnings).toHaveBeenCalledTimes(1);
+            expect(warnings).toHaveBeenCalledWith(
+                `auth event=refresh outcome=failed ${user} access_token=valid status=400 error=invalid_grant`,
+            );
 
             await jwt(failed);
             expect(idp.tokenRequests).toEqual(['refresh-0']);
@@ -257,6 +292,60 @@ describe('jwt callback refresh', () => {
             await jest.advanceTimersByTimeAsync(30_000);
             await jwt(failed);
             expect(idp.tokenRequests).toEqual(['refresh-0', 'refresh-0']);
+        });
+    });
+
+    describe('sign-in and sign-out lines', () => {
+        const NOW = 1_800_000_000;
+        const account = {
+            refresh_token: 'secret-refresh',
+            expires_at: NOW + 3600,
+        };
+
+        beforeEach(() => {
+            jest.useFakeTimers().setSystemTime(NOW * 1000);
+        });
+
+        afterEach(() => {
+            delete mockEnv.NEXTAUTH_REQUIRED_GROUP;
+        });
+
+        it.each([
+            { who: 'is not restricted', group: undefined, groups: [] },
+            { who: 'has the required group', group: 'ops', groups: ['ops'] },
+            { who: 'lacks the required group', group: 'ops', groups: ['dev'] },
+        ])('logs a user who $who', async ({ group, groups }) => {
+            if (group) {
+                mockEnv.NEXTAUTH_REQUIRED_GROUP = group;
+            }
+            const signIn = (await loadAuthOptions()).callbacks!.signIn!;
+            const params: Record<string, unknown> = {
+                profile: { sub: 'subject-1', groups },
+                account,
+            };
+
+            const allowed = await signIn(
+                params as Parameters<typeof signIn>[0],
+            );
+
+            // The line carries a hash of the user, never the user or the token.
+            const outcome = allowed ? 'ok' : 'denied';
+            expect(allowed ? infos : warnings).toHaveBeenCalledWith(
+                `auth event=signin outcome=${outcome} user=${userId('subject-1')} refresh_token=present expires_in=3600`,
+            );
+            expect(allowed ? warnings : infos).not.toHaveBeenCalled();
+        });
+
+        it('logs a sign-out by the hashed user', async () => {
+            const signOut = (await loadAuthOptions()).events!.signOut!;
+
+            await signOut({ token: { sub: 'subject-1' } } as Parameters<
+                typeof signOut
+            >[0]);
+
+            expect(infos).toHaveBeenCalledWith(
+                `auth event=signout user=${userId('subject-1')}`,
+            );
         });
     });
 });

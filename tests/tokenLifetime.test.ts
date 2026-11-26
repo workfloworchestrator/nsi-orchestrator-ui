@@ -4,6 +4,7 @@ import {
     accessTokenTimes,
     calculateExpirationDate,
     calculateRefreshDate,
+    isExpired,
     needsRefresh,
     retryLater,
 } from '@/auth/tokenLifetime';
@@ -84,6 +85,25 @@ describe('needsRefresh', () => {
             };
 
             expect(needsRefresh(token, NOW)).toBe(needs);
+        },
+    );
+});
+
+describe('isExpired', () => {
+    it.each([
+        { expires: 600, expired: false },
+        { expires: 0, expired: true },
+        { expires: -10, expired: true },
+        { expires: undefined, expired: true },
+    ])(
+        'a token expiring in $expires s is expired: $expired',
+        ({ expires, expired }) => {
+            const token: JWT = {
+                accessTokenExpiresAt:
+                    expires === undefined ? undefined : NOW + expires,
+            };
+
+            expect(isExpired(token, NOW)).toBe(expired);
         },
     );
 });

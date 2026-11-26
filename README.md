@@ -146,6 +146,24 @@ enabled. Set `NEXTAUTH_AUTHORIZATION_SCOPE_OVERRIDE` to `openid` for those.
 > See [`breaking-changes.md`](./breaking-changes.md) if you're upgrading
 > from an older version.
 
+### Authentication logging
+
+The server writes one line per authentication event, `info` to stdout and
+failures as `warn` to stderr:
+
+```
+auth event=signin outcome=ok user=3f9a1c02 refresh_token=present expires_in=3600
+auth event=refresh outcome=ok user=3f9a1c02 access_token=valid refresh_in=3300
+auth event=refresh outcome=failed user=3f9a1c02 access_token=expired status=400 error=invalid_grant
+auth event=signout user=3f9a1c02
+```
+
+`user` is a short hash of the subject. `access_token` is the state of the
+access token when the refresh started (`valid` means an early refresh) and
+`refresh_in` the seconds until the next one. Tokens, cookies, profile data
+and error descriptions are never logged. A session that ends or is renewed
+in the browser shows up as `signout` or a new `signin`.
+
 ### UI feature toggles
 
 | Variable                         | Description                                                                                                                                        |
