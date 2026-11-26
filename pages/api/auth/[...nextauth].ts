@@ -38,7 +38,7 @@ const isOauth2Enabled = OAUTH2_ACTIVE?.toLowerCase() != 'false';
 // instead of an app that 403s on every call. The backend is the real boundary. Left empty by
 // default (any authenticated user); a deployment sets NEXTAUTH_REQUIRED_GROUP to the operators
 // group and requests the groups claim via NEXTAUTH_AUTHORIZATION_SCOPE_OVERRIDE. The claim name is
-// provider-specific (e.g. "groups", or "eduperson_entitlement" for SRAM), so it too is configurable.
+// provider-specific (e.g. "groups" or "roles"), so it too is configurable.
 const requiredGroup = NEXTAUTH_REQUIRED_GROUP || '';
 const groupsClaim = NEXTAUTH_GROUPS_CLAIM || 'groups';
 

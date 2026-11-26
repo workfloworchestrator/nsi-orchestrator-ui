@@ -25,14 +25,15 @@ fullnameOverride: ""
 #  ORCHESTRATOR_WEBSOCKET_URL: "wss://orchestrator.example.net/api/ws/events"
 #  USE_WEB_SOCKETS: "true"
 #  ENVIRONMENT_NAME: "Development"
-#  # Auth against the OIDC provider (SRAM); request the groups scope, plus offline_access for a
-#  # refresh token (without it the session dies at access-token expiry).
+#  # Auth against an OIDC provider; request the groups scope, plus offline_access for a refresh
+#  # token (without it the session dies at access-token expiry). A provider that accepts only
+#  # openid enables refresh tokens on the client instead.
 #  OAUTH2_ACTIVE: "true"
-#  NEXTAUTH_PROVIDER_ID: "sram"
-#  NEXTAUTH_PROVIDER_NAME: "SRAM"
-#  NEXTAUTH_AUTHORIZATION_SCOPE_OVERRIDE: "openid profile email eduperson_entitlement offline_access"
+#  NEXTAUTH_PROVIDER_ID: "oidc"
+#  NEXTAUTH_PROVIDER_NAME: "OIDC"
+#  NEXTAUTH_AUTHORIZATION_SCOPE_OVERRIDE: "openid profile email groups offline_access"
 #  OAUTH2_CLIENT_ID: "nsi-orchestrator-ui"
-#  OIDC_CONF_FULL_WELL_KNOWN_URL: "https://proxy.sram.surf.nl/.well-known/openid-configuration"
+#  OIDC_CONF_FULL_WELL_KNOWN_URL: "https://idp.example.net/.well-known/openid-configuration"
 #  NEXTAUTH_URL: "https://orchestrator.example.net/api/auth"
 #  # UX-only sign-in guard (backend enforces); set to the operators group URN.
 #  NEXTAUTH_REQUIRED_GROUP: ""
@@ -154,7 +155,7 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
-# Pulls the NextAuth secret (and the OAuth2 client secret, if the SRAM client is confidential) from
+# Pulls the NextAuth secret (and the client secret, if the OAuth2 client is confidential) from
 # a cloud key vault via the secrets-store CSI driver, exposing them as the {{ .Release.Name }}-secret
 # used by envFrom. The deployment (ApplicationSet) sets the real provider/objects; disabled by
 # default for local rendering.

@@ -138,6 +138,9 @@ run one replica.
 | `NEXTAUTH_SECRET`                       | Standard NextAuth secret for signing session tokens (required in prod).                                            |
 | `NEXTAUTH_URL`                          | Public base URL of the deployed UI (required by NextAuth in production).                                           |
 
+Some providers accept only the `openid` scope and issue refresh tokens when the client has them
+enabled. Set `NEXTAUTH_AUTHORIZATION_SCOPE_OVERRIDE` to `openid` for those.
+
 > **Heads up:** several auth env vars were renamed in commit `edec88c`.
 > See [`breaking-changes.md`](./breaking-changes.md) if you're upgrading
 > from an older version.

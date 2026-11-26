@@ -3,7 +3,7 @@ import { JWT } from 'next-auth/jwt';
 
 import { REUSE_WINDOW_MS } from '@/auth/shareRefresh';
 
-// The mock IdP behaves like EngineBlock: a refresh token works once, then it is gone.
+// The mock IdP issues single-use refresh tokens: a refresh token works once, then it is gone.
 
 jest.mock('@orchestrator-ui/orchestrator-ui-components', () => ({
     getEnvironmentVariables: () => ({
