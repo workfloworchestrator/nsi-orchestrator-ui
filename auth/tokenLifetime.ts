@@ -7,6 +7,9 @@ export const REFRESH_MARGIN_SECONDS = 300;
 // A failed refresh is retried after this many seconds, not on every request.
 export const REFRESH_RETRY_SECONDS = 30;
 
+// Set on the session when an access token expired without being renewed: the library signs in again.
+export const REFRESH_ERROR = 'RefreshAccessTokenError';
+
 export const getCurrentDateInSeconds = () => Math.floor(Date.now() / 1000);
 
 export const calculateExpirationDate = (
@@ -43,8 +46,11 @@ export const accessTokenTimes = (
 });
 
 // Cookies from before the refresh date existed fall back to the expiry.
+const refreshDate = (token: JWT) =>
+    token.accessTokenRefreshAt ?? token.accessTokenExpiresAt;
+
 export const needsRefresh = (token: JWT, now = getCurrentDateInSeconds()) => {
-    const refreshAt = token.accessTokenRefreshAt ?? token.accessTokenExpiresAt;
+    const refreshAt = refreshDate(token);
     return !(typeof refreshAt === 'number' && now < refreshAt);
 };
 
@@ -60,19 +66,32 @@ export const accessTokenState = (
     return now < expiresAt ? 'valid' : 'expired';
 };
 
-// After a failed refresh, wait before the next attempt, but not past the expiry.
+// After a failed refresh, wait before the next attempt, but not past the expiry. An expired token
+// waits too, so a provider that is down is not called on every request.
 export const retryLater = (
     token: JWT,
     now = getCurrentDateInSeconds(),
 ): JWT => {
     const expiresAt = token.accessTokenExpiresAt;
-    return typeof expiresAt === 'number'
-        ? {
-              ...token,
-              accessTokenRefreshAt: Math.min(
-                  now + REFRESH_RETRY_SECONDS,
-                  expiresAt,
-              ),
-          }
-        : token;
+    if (typeof expiresAt !== 'number') {
+        return token;
+    }
+
+    const retryAt = now + REFRESH_RETRY_SECONDS;
+    return {
+        ...token,
+        accessTokenRefreshAt:
+            now < expiresAt ? Math.min(retryAt, expiresAt) : retryAt,
+    };
 };
+
+// The library keeps a fetched session until shortly before the date the session reports, and only
+// then asks the server, the one place a refresh happens. The refresh date makes it ask in time.
+export const sessionExpiry = (token: JWT) =>
+    refreshDate(token) as number | undefined;
+
+// An expired access token that has a refresh token was not renewed: the library signs in again.
+export const sessionError = (token: JWT, now = getCurrentDateInSeconds()) =>
+    token.refreshToken && accessTokenState(token, now) === 'expired'
+        ? REFRESH_ERROR
+        : undefined;

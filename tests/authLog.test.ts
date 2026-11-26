@@ -99,6 +99,12 @@ describe('userId', () => {
 describe('readOAuthErrorCode', () => {
     it.each([
         { body: '{"error":"invalid_grant"}', code: 'invalid_grant' },
+        {
+            body: `{"error":"${'a'.repeat(40)}"}`,
+            code: 'a'.repeat(40),
+        },
+        { body: `{"error":"${'a'.repeat(41)}"}`, code: undefined },
+        { body: '{"error":""}', code: undefined },
         { body: '{"error":"Bad Request: token abc"}', code: undefined },
         { body: '{"error":5}', code: undefined },
         { body: '{}', code: undefined },

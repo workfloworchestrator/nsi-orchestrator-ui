@@ -20,8 +20,12 @@ export const logAuth = (
         .filter(([, value]) => value !== undefined)
         .map(([key, value]) => `${key}=${quote(String(value))}`);
 
-    // eslint-disable-next-line no-console
-    console[level](['auth', `event=${event}`, ...pairs].join(' '));
+    try {
+        // eslint-disable-next-line no-console
+        console[level](['auth', `event=${event}`, ...pairs].join(' '));
+    } catch {
+        // Logging must not fail the caller; a refresh has already used up the refresh token.
+    }
 };
 
 // HMAC, not a plain hash: without the secret NextAuth uses, a guessable subject cannot be matched
@@ -55,7 +59,7 @@ export class DiscoveryError extends Error {
 // The standard error code, not the description.
 export const readOAuthErrorCode = async (response: Response) => {
     const body = await response.json().catch(() => undefined);
-    return allowlisted(body?.error, /^[a-z_]+$/);
+    return allowlisted(body?.error, /^[a-z_]{1,40}$/);
 };
 
 // Checked by shape: errors from fetch and AbortSignal do not always share this module's `Error`.

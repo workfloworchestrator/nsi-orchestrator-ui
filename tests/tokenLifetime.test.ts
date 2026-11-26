@@ -1,12 +1,15 @@
 import { JWT } from 'next-auth/jwt';
 
 import {
+    REFRESH_ERROR,
     accessTokenState,
     accessTokenTimes,
     calculateExpirationDate,
     calculateRefreshDate,
     needsRefresh,
     retryLater,
+    sessionError,
+    sessionExpiry,
 } from '@/auth/tokenLifetime';
 
 const NOW = 1_800_000_000;
@@ -109,7 +112,8 @@ describe('retryLater', () => {
     it.each([
         { expires: 600, retryAt: 30 },
         { expires: 10, retryAt: 10 },
-        { expires: -10, retryAt: -10 },
+        { expires: 0, retryAt: 30 },
+        { expires: -10, retryAt: 30 },
     ])(
         'retries a token expiring in $expires s at $retryAt s',
         ({ expires, retryAt }) => {
@@ -126,5 +130,48 @@ describe('retryLater', () => {
         const token: JWT = { accessToken: 'access-0' };
 
         expect(retryLater(token, NOW)).toBe(token);
+    });
+});
+
+describe('sessionError', () => {
+    it.each([
+        { expires: 600, refreshToken: 'refresh-0', error: undefined },
+        { expires: 1, refreshToken: 'refresh-0', error: undefined },
+        { expires: 0, refreshToken: 'refresh-0', error: REFRESH_ERROR },
+        { expires: -10, refreshToken: 'refresh-0', error: REFRESH_ERROR },
+        { expires: -10, refreshToken: undefined, error: undefined },
+        { expires: undefined, refreshToken: 'refresh-0', error: undefined },
+    ])(
+        'a token expiring in $expires s with refresh token $refreshToken has error $error',
+        ({ expires, refreshToken, error }) => {
+            const token: JWT = {
+                accessTokenExpiresAt:
+                    expires === undefined ? undefined : NOW + expires,
+                refreshToken,
+            };
+
+            expect(sessionError(token, NOW)).toBe(error);
+        },
+    );
+});
+
+describe('sessionExpiry', () => {
+    it.each([
+        {
+            why: 'the refresh date',
+            token: {
+                accessTokenExpiresAt: NOW + 3600,
+                accessTokenRefreshAt: NOW + 3300,
+            },
+            reported: NOW + 3300,
+        },
+        {
+            why: 'the expiry without a refresh date',
+            token: { accessTokenExpiresAt: NOW + 600 },
+            reported: NOW + 600,
+        },
+        { why: 'nothing without either', token: {}, reported: undefined },
+    ])('reports $why', ({ token, reported }) => {
+        expect(sessionExpiry(token)).toBe(reported);
     });
 });

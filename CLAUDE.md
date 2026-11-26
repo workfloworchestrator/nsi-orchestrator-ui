@@ -25,7 +25,9 @@ values, not hard-coded here.
 - `auth/shareRefresh.ts` — concurrent session requests share one token refresh
   (single-use refresh tokens); per process, so keep one replica.
 - `auth/tokenLifetime.ts` — token expiry and refresh-date arithmetic: refresh
-  shortly before expiry, wait after a failed refresh.
+  shortly before expiry, wait after a failed refresh. The session reports the
+  refresh date as its expiry, because the library keeps a session until then,
+  and sets `error` for an expired token that has a refresh token.
 - `auth/log.ts` — one-line auth events (`auth event=… key=value`). Never log
   tokens, cookies, profile data or error descriptions; `user` is a keyed hash.
 - `components/AppLogo/AppLogo.tsx` — wordmark fallback; `APP_LOGO_URL` env

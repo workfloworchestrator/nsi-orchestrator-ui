@@ -24,6 +24,8 @@ import {
     getCurrentDateInSeconds,
     needsRefresh,
     retryLater,
+    sessionError,
+    sessionExpiry,
 } from '@/auth/tokenLifetime';
 
 const {
@@ -274,8 +276,9 @@ export const authOptions: AuthOptions = {
                 ...session,
                 profile: token.profile as WfoUserProfile | undefined,
                 accessToken: token.accessToken ? String(token.accessToken) : '',
-                accessTokenExpiresAt: token.accessTokenExpiresAt as number,
+                accessTokenExpiresAt: sessionExpiry(token),
                 refreshTokenExpiresAt: token.refreshTokenExpiresAt as number,
+                error: sessionError(token),
             };
         },
     },

@@ -126,6 +126,10 @@ the lifetime for short-lived tokens). Concurrent requests with the same
 token share one refresh, so providers with single-use refresh tokens work.
 The sharing is per process; run one replica.
 
+A failed refresh is retried after 30 seconds. Once the access token has
+expired without a refresh, the session carries an error and the UI signs in
+again.
+
 | Variable                                | Description                                                                                                        |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | `OAUTH2_ACTIVE`                         | Set to `false` to disable login entirely (handy for local dev).                                                    |
@@ -140,6 +144,11 @@ The sharing is per process; run one replica.
 
 Some providers accept only the `openid` scope and issue refresh tokens when the client has them
 enabled. Set `NEXTAUTH_AUTHORIZATION_SCOPE_OVERRIDE` to `openid` for those.
+
+With `offline_access` the request carries `prompt=consent`, which providers
+require for a refresh token. A provider that honours it shows its consent
+screen at every sign-in, including the one the UI starts when a session has
+expired.
 
 > **Heads up:** several auth env vars were renamed in commit `edec88c`.
 > See [`breaking-changes.md`](./breaking-changes.md) if you're upgrading

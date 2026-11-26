@@ -3,6 +3,7 @@ import { JWT } from 'next-auth/jwt';
 
 import { userId } from '@/auth/log';
 import { REUSE_WINDOW_MS } from '@/auth/shareRefresh';
+import { REFRESH_ERROR } from '@/auth/tokenLifetime';
 
 // The mock IdP issues single-use refresh tokens: a refresh token works once, then it is gone.
 
@@ -22,6 +23,7 @@ jest.mock('@orchestrator-ui/orchestrator-ui-components', () => ({
 
 const CONCURRENT_REQUESTS = 13;
 const TOKEN_ENDPOINT = 'https://idp.test/token';
+const NOW = 1_800_000_000;
 
 const startIdp = (
     validRefreshTokens: string[],
@@ -73,8 +75,8 @@ const loadAuthOptions = async () => {
     return authOptions;
 };
 
-const loadJwtCallback = async () => {
-    const jwt = (await loadAuthOptions()).callbacks!.jwt!;
+const jwtCallback = (options: Awaited<ReturnType<typeof loadAuthOptions>>) => {
+    const jwt = options.callbacks!.jwt!;
 
     return (token: JWT, account?: Record<string, unknown>) =>
         jwt({ token, account } as Parameters<typeof jwt>[0]);
@@ -87,7 +89,8 @@ const expiredToken = (refreshToken?: string): JWT => ({
 });
 
 describe('jwt callback refresh', () => {
-    let jwt: Awaited<ReturnType<typeof loadJwtCallback>>;
+    let authOptions: Awaited<ReturnType<typeof loadAuthOptions>>;
+    let jwt: ReturnType<typeof jwtCallback>;
     let warnings: jest.SpyInstance;
     let infos: jest.SpyInstance;
 
@@ -102,7 +105,8 @@ describe('jwt callback refresh', () => {
     beforeEach(async () => {
         warnings = jest.spyOn(console, 'warn').mockImplementation();
         infos = jest.spyOn(console, 'info').mockImplementation();
-        jwt = await loadJwtCallback();
+        authOptions = await loadAuthOptions();
+        jwt = jwtCallback(authOptions);
     });
 
     afterEach(() => {
@@ -233,6 +237,22 @@ describe('jwt callback refresh', () => {
         });
     });
 
+    it('keeps the new tokens when the log line cannot be written', async () => {
+        infos.mockImplementation(() => {
+            throw new Error('write EPIPE');
+        });
+        const idp = startIdp(['refresh-0']);
+
+        const refreshed = await jwt(expiredToken('refresh-0'));
+
+        expect(idp.tokenRequests).toEqual(['refresh-0']);
+        expect(warnings).not.toHaveBeenCalled();
+        expect(refreshed).toMatchObject({
+            accessToken: 'access-1',
+            refreshToken: 'refresh-1',
+        });
+    });
+
     it('does not contact the IdP without a refresh token', async () => {
         startIdp([]);
         const token = expiredToken();
@@ -257,7 +277,6 @@ describe('jwt callback refresh', () => {
     });
 
     describe('refresh date', () => {
-        const NOW = 1_800_000_000;
         // Valid for 10 more minutes, but past its refresh date.
         const dueToken = (): JWT => ({
             ...expiredToken('refresh-0'),
@@ -303,31 +322,80 @@ describe('jwt callback refresh', () => {
             });
         });
 
-        it('keeps the valid access token and waits before retrying a failed early refresh', async () => {
-            const idp = startIdp([]);
+        it.each([
+            { state: 'valid', expiresIn: 600 },
+            { state: 'expired', expiresIn: -10 },
+        ])(
+            'waits before retrying a failed refresh of a $state access token',
+            async ({ state, expiresIn }) => {
+                const idp = startIdp([]);
 
-            const failed = await jwt(dueToken());
+                const failed = await jwt({
+                    ...dueToken(),
+                    accessTokenExpiresAt: NOW + expiresIn,
+                });
 
-            expect(failed).toMatchObject({
-                accessToken: 'access-0',
-                accessTokenRefreshAt: NOW + 30,
+                expect(failed).toMatchObject({
+                    accessToken: 'access-0',
+                    accessTokenRefreshAt: NOW + 30,
+                });
+                expect(warnings).toHaveBeenCalledTimes(1);
+                expect(warnings).toHaveBeenCalledWith(
+                    `auth event=refresh outcome=failed ${user} access_token=${state} status=400 error=invalid_grant`,
+                );
+
+                await jwt(failed);
+                expect(idp.tokenRequests).toEqual(['refresh-0']);
+
+                await jest.advanceTimersByTimeAsync(30_000);
+                await jwt(failed);
+                expect(idp.tokenRequests).toEqual(['refresh-0', 'refresh-0']);
+            },
+        );
+    });
+
+    describe('session', () => {
+        const EXPIRED = 1;
+        const NOT_EXPIRED = 4_000_000_000;
+        const sessionFor = async (token: JWT) => {
+            const session = authOptions.callbacks!.session!;
+
+            return (await session({ session: {}, token } as Parameters<
+                typeof session
+            >[0])) as { accessTokenExpiresAt?: number; error?: string };
+        };
+
+        it('reports the refresh date, so the library asks again in time', async () => {
+            const session = await sessionFor({
+                accessTokenExpiresAt: NOW + 3600,
+                accessTokenRefreshAt: NOW + 3300,
             });
-            expect(warnings).toHaveBeenCalledTimes(1);
-            expect(warnings).toHaveBeenCalledWith(
-                `auth event=refresh outcome=failed ${user} access_token=valid status=400 error=invalid_grant`,
-            );
 
-            await jwt(failed);
-            expect(idp.tokenRequests).toEqual(['refresh-0']);
+            expect(session.accessTokenExpiresAt).toBe(NOW + 3300);
+        });
 
-            await jest.advanceTimersByTimeAsync(30_000);
-            await jwt(failed);
-            expect(idp.tokenRequests).toEqual(['refresh-0', 'refresh-0']);
+        it.each([
+            {
+                why: 'an expired token with a refresh token',
+                token: { accessTokenExpiresAt: EXPIRED, refreshToken: 'r' },
+                error: REFRESH_ERROR,
+            },
+            {
+                why: 'a token that has not expired',
+                token: { accessTokenExpiresAt: NOT_EXPIRED, refreshToken: 'r' },
+                error: undefined,
+            },
+            {
+                why: 'an expired token without a refresh token',
+                token: { accessTokenExpiresAt: EXPIRED },
+                error: undefined,
+            },
+        ])('has error $error for $why', async ({ token, error }) => {
+            expect((await sessionFor(token)).error).toBe(error);
         });
     });
 
     describe('sign-in and sign-out lines', () => {
-        const NOW = 1_800_000_000;
         const account = {
             refresh_token: 'secret-refresh',
             expires_at: NOW + 3600,
