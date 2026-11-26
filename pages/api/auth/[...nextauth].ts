@@ -9,6 +9,12 @@ import {
 } from '@orchestrator-ui/orchestrator-ui-components';
 
 import { shareRefresh } from '@/auth/shareRefresh';
+import {
+    accessTokenTimes,
+    calculateExpirationDate,
+    needsRefresh,
+    retryLater,
+} from '@/auth/tokenLifetime';
 
 const {
     OAUTH2_ACTIVE,
@@ -61,16 +67,6 @@ const token_endpoint_auth_method = OAUTH2_CLIENT_SECRET
     ? 'client_secret_basic'
     : 'none';
 
-const getCurrentDateInSeconds = () => Math.floor(Date.now() / 1000);
-
-const calculateExpirationDate = (expiresIn?: number) => {
-    if (!expiresIn) {
-        return undefined;
-    }
-
-    return getCurrentDateInSeconds() + expiresIn;
-};
-
 // Every request sharing a refresh waits for it, so one deadline covers discovery and token request.
 const REFRESH_TIMEOUT_MS = 10_000;
 
@@ -103,15 +99,15 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
 
         const data: {
             access_token: string;
-            expires_in: number;
+            expires_in: number | string;
             refresh_token: string;
-            refresh_expires_in: number;
+            refresh_expires_in: number | string;
         } = await response.json();
 
         return {
             ...token,
             accessToken: data.access_token,
-            accessTokenExpiresAt: calculateExpirationDate(data.expires_in),
+            ...accessTokenTimes(calculateExpirationDate(data.expires_in)),
             refreshToken: data.refresh_token,
             refreshTokenExpiresAt: calculateExpirationDate(
                 data.refresh_expires_in,
@@ -186,7 +182,7 @@ export const authOptions: AuthOptions = {
                     ...token,
                     accessToken: account.access_token,
                     refreshToken: account.refresh_token,
-                    accessTokenExpiresAt: account.expires_at as number,
+                    ...accessTokenTimes(account.expires_at),
                     refreshTokenExpiresAt: calculateExpirationDate(
                         account.refresh_expires_in as number,
                     ),
@@ -194,11 +190,7 @@ export const authOptions: AuthOptions = {
                 };
             }
 
-            const now = getCurrentDateInSeconds();
-            if (
-                typeof token.accessTokenExpiresAt === 'number' &&
-                now < token.accessTokenExpiresAt
-            ) {
+            if (!needsRefresh(token)) {
                 return token;
             }
 
@@ -215,7 +207,7 @@ export const authOptions: AuthOptions = {
                 return { ...shared };
             } catch {
                 // A rejection would make NextAuth clear the session cookie.
-                return token;
+                return retryLater(token);
             }
         },
         async session({

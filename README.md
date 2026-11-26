@@ -121,10 +121,11 @@ A complete starter set lives in `.env.example` — copy it to `.env` (or
 
 Authentication is handled by [NextAuth](https://next-auth.js.org/) with
 a generic OIDC provider configured from the `wellKnown` URL. PKCE +
-state checks are enabled, and access tokens are refreshed automatically.
-Concurrent requests with the same expired token share one refresh, so
-providers with single-use refresh tokens work. The sharing is per process;
-run one replica.
+state checks are enabled, and access tokens are refreshed automatically by
+the first session request in the 5 minutes before they expire (a tenth of
+the lifetime for short-lived tokens). Concurrent requests with the same
+token share one refresh, so providers with single-use refresh tokens work.
+The sharing is per process; run one replica.
 
 | Variable                                | Description                                                                                                        |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |

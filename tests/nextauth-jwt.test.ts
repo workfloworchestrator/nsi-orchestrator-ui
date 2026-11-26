@@ -20,7 +20,10 @@ jest.mock('@orchestrator-ui/orchestrator-ui-components', () => ({
 const CONCURRENT_REQUESTS = 13;
 const TOKEN_ENDPOINT = 'https://idp.test/token';
 
-const startIdp = (validRefreshTokens: string[]) => {
+const startIdp = (
+    validRefreshTokens: string[],
+    expiresIn: number | string = 3600,
+) => {
     const valid = new Set(validRefreshTokens);
     let issued = 0;
     const tokenRequests: string[] = [];
@@ -47,7 +50,7 @@ const startIdp = (validRefreshTokens: string[]) => {
         return Response.json({
             access_token: `access-${issued}`,
             refresh_token: `refresh-${issued}`,
-            expires_in: 3600,
+            expires_in: expiresIn,
         });
     });
 
@@ -60,7 +63,8 @@ const loadJwtCallback = async () => {
     const { authOptions } = await import('@/pages/api/auth/[...nextauth]');
     const jwt = authOptions.callbacks!.jwt!;
 
-    return (token: JWT) => jwt({ token } as Parameters<typeof jwt>[0]);
+    return (token: JWT, account?: Record<string, unknown>) =>
+        jwt({ token, account } as Parameters<typeof jwt>[0]);
 };
 
 const expiredToken = (refreshToken?: string): JWT => ({
@@ -169,7 +173,7 @@ describe('jwt callback refresh', () => {
 
         expect(fetch).toHaveBeenCalledTimes(1);
         expect(consoleError).toHaveBeenCalledTimes(1);
-        expect(results).toEqual(allEqual(token));
+        expect(results).toEqual(allEqual(expect.objectContaining(token)));
     });
 
     it('does not contact the IdP without a refresh token', async () => {
@@ -192,5 +196,67 @@ describe('jwt callback refresh', () => {
 
         expect(await jwt(token)).toEqual(token);
         expect(fetch).not.toHaveBeenCalled();
+    });
+
+    describe('refresh date', () => {
+        const NOW = 1_800_000_000;
+        // Valid for 10 more minutes, but past its refresh date.
+        const dueToken = (): JWT => ({
+            ...expiredToken('refresh-0'),
+            accessTokenExpiresAt: NOW + 600,
+            accessTokenRefreshAt: NOW - 60,
+        });
+
+        beforeEach(() => {
+            jest.useFakeTimers().setSystemTime(NOW * 1000);
+        });
+
+        it('refreshes a valid token once its refresh date has passed', async () => {
+            const idp = startIdp(['refresh-0'], '3600');
+
+            const refreshed = await jwt(dueToken());
+
+            expect(idp.tokenRequests).toEqual(['refresh-0']);
+            expect(refreshed).toMatchObject({
+                refreshToken: 'refresh-1',
+                accessTokenExpiresAt: NOW + 3600,
+                accessTokenRefreshAt: NOW + 3300,
+            });
+        });
+
+        it('plans the first refresh when the user signs in', async () => {
+            const signedIn = await jwt(
+                {},
+                {
+                    access_token: 'access-0',
+                    refresh_token: 'refresh-0',
+                    expires_at: NOW + 3600,
+                },
+            );
+
+            expect(signedIn).toMatchObject({
+                accessTokenExpiresAt: NOW + 3600,
+                accessTokenRefreshAt: NOW + 3300,
+            });
+        });
+
+        it('keeps the valid access token and waits before retrying a failed early refresh', async () => {
+            const idp = startIdp([]);
+
+            const failed = await jwt(dueToken());
+
+            expect(failed).toMatchObject({
+                accessToken: 'access-0',
+                accessTokenRefreshAt: NOW + 30,
+            });
+            expect(consoleError).toHaveBeenCalledTimes(1);
+
+            await jwt(failed);
+            expect(idp.tokenRequests).toEqual(['refresh-0']);
+
+            await jest.advanceTimersByTimeAsync(30_000);
+            await jwt(failed);
+            expect(idp.tokenRequests).toEqual(['refresh-0', 'refresh-0']);
+        });
     });
 });
