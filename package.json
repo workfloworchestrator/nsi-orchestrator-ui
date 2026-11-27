@@ -37,7 +37,7 @@
         "@orchestrator-ui/eslint-config-custom": "2.3.1",
         "@orchestrator-ui/jest-config": "1.8.1",
         "@orchestrator-ui/tsconfig": "1.5.1",
-        "@testing-library/jest-dom": "7.0.1",
+        "@testing-library/jest-dom": "8.0.0",
         "@trivago/prettier-plugin-sort-imports": "6.0.2",
         "@types/node": "25.9.9",
         "@types/react": "18.3.31",
